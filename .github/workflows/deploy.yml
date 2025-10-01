@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -37,6 +39,16 @@ jobs:
             ${{ runner.os }}-pnpm-store-
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+      - name: Verify Supabase envs
+        run: |
+          if [ -z "${VITE_SUPABASE_URL}" ] || [ -z "${VITE_SUPABASE_ANON_KEY}" ]; then
+            echo "Missing required env vars VITE_SUPABASE_URL and/or VITE_SUPABASE_ANON_KEY." >&2
+            echo "Add them under Settings > Secrets and variables > Actions." >&2
+            exit 1
+          fi
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       - name: Build
         run: pnpm build
         env:
