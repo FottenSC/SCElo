@@ -6,6 +6,7 @@ type AuthContextValue = {
   session: Session | null
   loading: boolean
   signInWithGithub: () => Promise<void>
+  signInWithTwitter: () => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -41,6 +42,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const redirectTo = new URL(import.meta.env.BASE_URL, window.location.origin).toString()
         await supabase.auth.signInWithOAuth({
           provider: 'github',
+          options: { redirectTo },
+        })
+      },
+      async signInWithTwitter() {
+        const redirectTo = new URL(import.meta.env.BASE_URL, window.location.origin).toString()
+        await supabase.auth.signInWithOAuth({
+          provider: 'twitter',
           options: { redirectTo },
         })
       },
