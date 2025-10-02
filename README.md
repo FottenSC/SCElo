@@ -31,15 +31,45 @@ pnpm dev
 ```
 
 Notes
+## Local Supabase (optional)
+To run the app against a local Supabase stack on Windows:
+
+Prereqs
+- Docker Desktop running
+- Supabase CLI installed: https://supabase.com/docs/guides/cli
+
+Initialize once (creates `supabase/config.toml`):
+```powershell
 - Auth redirect: In Supabase Auth settings, add the redirect URL for GitHub Pages, for example:
+```
+
+Start the local stack:
+```powershell
   - https://fottensc.github.io/SCElo/
+```
+If you see "Could not connect to local Supabase project. Make sure you've run 'supabase start'!", ensure Docker is running and that `supabase/config.toml` exists in the project root. If missing, run `supabase init` again in the repo root.
+
+Set Vite env vars to point to local services:
+```powershell
 - The app uses `HashRouter`, so no extra path segments are required.
 
 ## Build
+```
+
+Apply schema and seed (from this repo):
+```powershell
 ```sh
 pnpm build
 ```
+```
+
+Open Studio: http://localhost:54323
+
+Stop the stack when done:
+```powershell
 Outputs to `dist/`.
+```
+
 
 ## Deploy to GitHub Pages
 Two convenient options:

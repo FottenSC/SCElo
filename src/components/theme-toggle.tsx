@@ -5,8 +5,13 @@ import { useTheme } from '@/components/theme-provider'
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
 
-  const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
-  const label = theme === 'light' ? 'Switch to dark' : theme === 'dark' ? 'Use system' : 'Switch to light'
+  // If system theme, read the actual system preference to determine toggle behavior
+  const effectiveTheme = theme === 'system' 
+    ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : theme
+
+  const next = effectiveTheme === 'light' ? 'dark' : 'light'
+  const label = effectiveTheme === 'light' ? 'Switch to dark' : 'Switch to light'
 
   return (
     <div className="flex items-center gap-1">
