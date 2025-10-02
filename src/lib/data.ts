@@ -1,12 +1,30 @@
 import { useEffect, useState } from 'react'
 import type { Player, PlayedMatch } from '@/types/models'
 import { supabase } from '@/supabase/client'
+import { getPlayerAvatarUrl, preloadAvatars } from '@/lib/avatar'
 
 export async function fetchPlayers(): Promise<Player[]> {
   try {
-    const { data, error } = await supabase.from('players').select('id, name')
+    const { data, error } = await supabase
+      .from('players')
+      .select('id, name, twitter, created, rating, rd, volatility')
+      .order('rating', { ascending: false })
     if (error) throw error
-    return (data ?? []) as Player[]
+    
+    const players = (data ?? []) as Player[]
+    
+    // Preload avatar images for top players in the background
+    if (players.length > 0 && typeof window !== 'undefined') {
+      // Preload top 10 players' avatars
+      const topPlayerAvatars = players
+        .slice(0, 10)
+        .map(p => getPlayerAvatarUrl(p.twitter, 48, p.name))
+      
+      // Use setTimeout to avoid blocking the main thread
+      setTimeout(() => preloadAvatars(topPlayerAvatars), 100)
+    }
+    
+    return players
   } catch (e) {
     console.warn('fetchPlayers failed:', e)
     return []
@@ -17,8 +35,8 @@ export async function fetchMatches(): Promise<PlayedMatch[]> {
   try {
     const { data, error } = await supabase
       .from('matches')
-      .select('id, aId, bId, winnerId, at')
-      .order('at', { ascending: false })
+      .select('id, player1_id, player2_id, winner_id, is_fake_data, player1_score, player2_score')
+      .order('id', { ascending: false })
     if (error) throw error
     return (data ?? []) as PlayedMatch[]
   } catch (e) {

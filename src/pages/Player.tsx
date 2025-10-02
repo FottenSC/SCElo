@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { usePlayersAndMatches } from '@/lib/data'
-import { computeRatings } from '@/lib/rankings'
+import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
 
 function format(num: number, digits = 0) {
   return num.toLocaleString(undefined, {
@@ -14,18 +14,17 @@ function format(num: number, digits = 0) {
 
 export default function Player() {
   const { id } = useParams<{ id: string }>()
+  const playerId = id ? parseInt(id, 10) : undefined
   const { players, matches, loading } = usePlayersAndMatches()
 
-  const player = useMemo(() => players.find((p) => p.id === id), [players, id])
-  const ratings = useMemo(() => computeRatings(players, matches), [players, matches])
-  const pr = ratings.find((r) => r.player.id === id)
+  const player = useMemo(() => players.find((p) => p.id === playerId), [players, playerId])
 
-  const myMatches = useMemo(() => matches.filter((m) => m.aId === id || m.bId === id), [matches, id])
+  const myMatches = useMemo(() => matches.filter((m) => m.player1_id === playerId || m.player2_id === playerId), [matches, playerId])
 
   let w = 0,
     l = 0
   for (const m of myMatches) {
-    if (m.winnerId === id) w++
+    if (m.winner_id === playerId) w++
     else l++
   }
 
@@ -43,20 +42,43 @@ export default function Player() {
         <>
           <Card>
             <CardHeader>
-              <CardTitle>{player.name}</CardTitle>
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage 
+                    src={getPlayerAvatarUrl(player.twitter, 96, player.name)} 
+                    alt={player.name}
+                  />
+                  <AvatarFallback className="text-2xl">
+                    {getPlayerInitials(player.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <CardTitle>{player.name}</CardTitle>
+                  {player.twitter && (
+                    <a 
+                      href={`https://twitter.com/${player.twitter.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-muted-foreground hover:text-primary"
+                    >
+                      @{player.twitter.replace('@', '')}
+                    </a>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div>
                 <div className="text-muted-foreground text-xs">Rating</div>
-                <div className="font-medium text-lg">{format(pr?.rating ?? 1500, 0)}</div>
+                <div className="font-medium text-lg">{format(player.rating, 0)}</div>
               </div>
               <div>
                 <div className="text-muted-foreground text-xs">RD</div>
-                <div>{format(pr?.rd ?? 350, 0)}</div>
+                <div>{format(player.rd, 0)}</div>
               </div>
               <div>
                 <div className="text-muted-foreground text-xs">Volatility</div>
-                <div>{(pr?.vol ?? 0.06).toFixed(3)}</div>
+                <div>{player.volatility.toFixed(3)}</div>
               </div>
               <div>
                 <div className="text-muted-foreground text-xs">Record</div>
@@ -85,16 +107,38 @@ export default function Player() {
                   </thead>
                   <tbody>
                     {myMatches.map((m) => {
-                      const oppId = m.aId === id ? m.bId : m.aId
+                      const oppId = m.player1_id === playerId ? m.player2_id : m.player1_id
                       const opp = players.find((p) => p.id === oppId)
-                      const won = m.winnerId === id
+                      const won = m.winner_id === playerId
                       return (
                         <tr className="border-b last:border-0" key={m.id}>
                           <td className="py-2 pr-4 w-24">{m.id}</td>
                           <td className="py-2 pr-4">
-                            <Link className="text-primary" to={`/players/${oppId}`}>{opp?.name ?? oppId}</Link>
+                            {opp ? (
+                              <Link 
+                                className="flex items-center gap-2 text-primary hover:underline" 
+                                to={`/players/${oppId}`}
+                              >
+                                <Avatar className="h-6 w-6">
+                                  <AvatarImage 
+                                    src={getPlayerAvatarUrl(opp.twitter, 36, opp.name)} 
+                                    alt={opp.name}
+                                  />
+                                  <AvatarFallback className="text-xs">
+                                    {getPlayerInitials(opp.name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span>{opp.name}</span>
+                              </Link>
+                            ) : (
+                              <span className="text-muted-foreground">{oppId}</span>
+                            )}
                           </td>
-                          <td className="py-2 pr-4">{won ? 'Win' : 'Loss'}</td>
+                          <td className="py-2 pr-4">
+                            <span className={won ? 'text-green-600 font-medium' : 'text-red-600'}>
+                              {won ? 'Win' : 'Loss'}
+                            </span>
+                          </td>
                         </tr>
                       )
                     })}

@@ -1,14 +1,19 @@
 export type Player = {
-  id: string
+  id: number
   name: string
+  twitter?: string
+  created?: string
+  rating: number
+  rd: number
+  volatility: number
 }
 
 export type PlayedMatch = {
-  id: string
-  aId: string
-  bId: string
-  // winner is either aId or bId
-  winnerId: string
-  // optional timestamp (ms since epoch)
-  at?: number
+  id: number
+  player1_id: number
+  player2_id: number
+  winner_id: number
+  is_fake_data: boolean
+  player1_score: number
+  player2_score?: number
 }
