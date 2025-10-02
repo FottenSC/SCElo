@@ -73,7 +73,7 @@ BEGIN
     ('Valhanya','Kellerak',5,1,'Season 5','Valhanya'),
     ('WorldBranstar','Kellerak',5,0,'Season 5','WorldBranstar'),
     ('Lyonide','LEV77',5,2,'Season 5','Lyonide'),
-    ('Freemard','LozKias',5,2,'Season 5','Freemard'),
+    ('Freemard','Loz Kias',5,2,'Season 5','Freemard'),
     ('Fotten','Lyonide',5,4,'Season 5','Fotten'),
     ('Freemard','Lyonide',5,2,'Season 5','Freemard'),
     ('Loz Kias','Lyonide',5,3,'Season 5','Loz Kias'),
@@ -180,7 +180,7 @@ BEGIN
     ('nins','Jumpie',5,4,'Season 4','nins'),
     ('Amancio Ortega','Kusoge',5,0,'Season 4','Amancio Ortega'),
     ('Fanlee Jr','LEV77',5,1,'Season 4','Fanlee Jr'),
-    ('Guilu','LozKias',5,2,'Season 4','Guilu'),
+    ('Guilu','Loz Kias',5,2,'Season 4','Guilu'),
     ('Zollith','Lyonide',5,2,'Season 4','Zollith'),
     ('Afflatus Misery','Mental',5,3,'Season 4','Afflatus Misery'),
     ('Hamidumi','Miha Senju',5,1,'Season 4','Hamidumi'),
@@ -242,8 +242,8 @@ BEGIN
     ('Zephyrion','Kellerak',5,3,'Season 3','Zephyrion'),
     ('Drunky','Kusoge',5,3,'Season 3','Drunky'),
     ('WorldBranstar','Kusoge',5,0,'Season 3','WorldBranstar'),
-    ('Fotten','LozKias',5,1,'Season 3','Fotten'),
-    ('WorldBranstar','LozKias',5,2,'Season 3','WorldBranstar'),
+    ('Fotten','Loz Kias',5,1,'Season 3','Fotten'),
+    ('WorldBranstar','Loz Kias',5,2,'Season 3','WorldBranstar'),
     ('Aby','Lyonide',5,4,'Season 3','Aby'),
     ('Fotten','Lyonide',5,1,'Season 3','Fotten'),
     ('Hazu','Lyonide',5,3,'Season 3','Hazu'),
@@ -325,7 +325,7 @@ BEGIN
     ('Blade of Flame','Jazair',5,3,'Season 2','Blade of Flame'),
     ('Valhanya','Jazair',5,0,'Season 2','Valhanya'),
     ('Prizvel','Kreozot',5,3,'Season 2','Prizvel'),
-    ('Habaduba','LozKias',5,3,'Season 2','Habaduba'),
+    ('Habaduba','Loz Kias',5,3,'Season 2','Habaduba'),
     ('Habaduba','Lyonide',5,3,'Season 2','Habaduba'),
     ('Loz Kias','Lyonide',5,4,'Season 2','Loz Kias'),
     ('Ventras','Lyonide',5,4,'Season 2','Ventras'),
@@ -421,7 +421,7 @@ BEGIN
     ('Aarpia','HolyCarp',5,0,'Season 1','Aarpia'),
     ('TaokakaMeow','jc_near',5,3,'Season 1','TaokakaMeow'),
     ('SHARK','K.D.C.',5,1,'Season 1','SHARK'),
-    ('Blade of Flame','LozKias',5,1,'Season 1','Blade of Flame'),
+    ('Blade of Flame','Loz Kias',5,1,'Season 1','Blade of Flame'),
     ('Graveryl','Momotehk',5,1,'Season 1','Graveryl'),
     ('PanPan','Momotehk',5,4,'Season 1','PanPan'),
     ('Guilu','MonkeyKing',5,0,'Season 1','Guilu'),
@@ -481,7 +481,8 @@ BEGIN
       SELECT 1
       FROM events AS E
       WHERE E.title = seeddata.event
-    );
+    )
+  ORDER BY event ACC;
 
   -- Insert unique players
   INSERT INTO players(name)

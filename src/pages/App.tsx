@@ -3,10 +3,13 @@ import Home from './Home'
 import Rankings from './Rankings'
 import Players from './Players'
 import Matches from './Matches'
+import Events from './Events'
+import SingleEvent from './SingleEvent'
 import Profile from './Profile'
 import Player from './Player'
 import Login from './Login'
 import NotFound from './NotFound'
+import { UpcomingMatches } from './UpcomingMatches'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/supabase/AuthContext'
@@ -25,14 +28,11 @@ export default function App() {
             <NavLink to="/rankings" className={({ isActive }) => isActive ? 'text-primary' : ''}>
               Rankings
             </NavLink>
-            <NavLink to="/players" className={({ isActive }) => isActive ? 'text-primary' : ''}>
-              Players
-            </NavLink>
             <NavLink to="/matches" className={({ isActive }) => isActive ? 'text-primary' : ''}>
               Matches
             </NavLink>
-            <NavLink to="/profile" className={({ isActive }) => isActive ? 'text-primary' : ''}>
-              Profile
+            <NavLink to="/events" className={({ isActive }) => isActive ? 'text-primary' : ''}>
+              Events
             </NavLink>
           </div>
           <div className="ml-auto flex items-center gap-3">
@@ -64,11 +64,14 @@ export default function App() {
       </nav>
       <main className="container py-6">
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<UpcomingMatches />} />
           <Route path="/rankings" element={<Rankings />} />
           <Route path="/players" element={<Players />} />
           <Route path="/players/:id" element={<Player />} />
           <Route path="/matches" element={<Matches />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/events/:id" element={<SingleEvent />} />
+          <Route path="/upcoming" element={<UpcomingMatches />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/login" element={<Login />} />
           <Route path="*" element={<NotFound />} />

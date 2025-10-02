@@ -24,6 +24,7 @@ export default function Player() {
   let w = 0,
     l = 0
   for (const m of myMatches) {
+    if (!m.winner_id) continue // Skip upcoming matches (shouldn't happen with fetchCompletedMatches, but be defensive)
     if (m.winner_id === playerId) w++
     else l++
   }
