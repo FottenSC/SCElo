@@ -124,6 +124,18 @@ export default function Rankings() {
     return sortedPlayers.slice(start, end)
   }, [sortedPlayers, currentPage])
   
+  // Calculate display rank based on current sort (for display purposes)
+  const getDisplayRank = (playerIndex: number) => {
+    // If sorted by rating in desc order (default), show the player's true ranking
+    if (sortBy === 'rating' && sortDir === 'desc') {
+      const player = paginatedPlayers[playerIndex]
+      if (!player) return 0
+      return playerRankings.get(player.id) ?? 0
+    }
+    // Otherwise, show sequential numbers based on current sort
+    return (currentPage - 1) * ITEMS_PER_PAGE + playerIndex + 1
+  }
+  
   // Reset to page 1 if current page is out of bounds
   if (currentPage > totalPages && totalPages > 0) {
     setCurrentPage(1)
@@ -203,11 +215,11 @@ export default function Rankings() {
                       </tr>
                     ) : (
                       paginatedPlayers.map((player, i) => {
-                        const rank = playerRankings.get(player.id) ?? 0
+                        const displayRank = getDisplayRank(i)
                         const totalMatches = playerMatchCounts.get(player.id) ?? 0
                         return (
                           <tr className="border-b last:border-0" key={player.id}>
-                            <td className="py-2 pr-4 w-10">{rank}</td>
+                            <td className="py-2 pr-4 w-10">{displayRank}</td>
                             <td className="py-2 pr-4">
                               <Link 
                                 className="flex items-center gap-2 text-primary hover:underline" 

@@ -520,12 +520,14 @@ BEGIN
   INNER JOIN players AS P1 ON P1.name = S.player1
   INNER JOIN players AS P2 ON P2.name = S.player2
   INNER JOIN players AS W ON W.name = S.winner
-  INNER JOIN events AS E ON E.title = S.event;
+  INNER JOIN events AS E ON E.title = S.event
+  ORDER BY S.row_index;
 
+  DROP TABLE seeddata;
 
 
   UPDATE matches
-  SET vod_link = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+  SET vod_link = 'https://www.youtube.com/shorts/IZMaHVVIObs';
 
   UPDATE events
   SET vod_link = 'https://youtu.be/1sFbLppuhhs?si=JUlABkFdrF5MYYvy';

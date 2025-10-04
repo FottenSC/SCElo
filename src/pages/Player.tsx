@@ -361,11 +361,11 @@ export default function Player() {
                         const isNearStart = index <= 1
                         
                         return (
-                          <div key={index} className="flex-1 flex flex-col items-center gap-1 group" style={{ minWidth: ratingHistory.length > 50 ? '6px' : 'auto' }}>
+                          <div key={index} className="flex-1 flex flex-col items-center gap-1 relative group" style={{ minWidth: ratingHistory.length > 50 ? '6px' : 'auto' }}>
                             <div className="relative w-full flex items-end justify-center" style={{ height: '100px' }}>
                               <button
                                 onClick={() => openMatch(point.matchId)}
-                                className={`w-full rounded-t transition-all cursor-pointer ${
+                                className={`w-full rounded-t transition-all cursor-pointer relative ${
                                   point.won 
                                     ? 'bg-green-500/30 hover:bg-green-500/50' 
                                     : 'bg-red-500/30 hover:bg-red-500/50'
@@ -380,7 +380,7 @@ export default function Player() {
                               </button>
                               
                               {/* Tooltip on hover - adjust position for edges */}
-                              <div className={`absolute bottom-full mb-2 hidden group-hover:block z-50 pointer-events-none ${
+                              <div className={`absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none ${
                                 isNearEnd ? 'right-0' : isNearStart ? 'left-0' : 'left-1/2 -translate-x-1/2'
                               }`}>
                                 <div className="bg-popover text-popover-foreground px-3 py-2 rounded-md shadow-lg border text-xs whitespace-nowrap">

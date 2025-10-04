@@ -43,10 +43,10 @@ export default function Admin() {
       
       const oldRating = player.rating
       
-      // Try to update rating to 3000
+      // Try to update rating to 1500
       const { error: updateError } = await supabase
         .from('players')
-        .update({ rating: 3000 })
+        .update({ rating: 1500 })
         .eq('id', player.id)
       
       if (updateError) {
@@ -59,7 +59,7 @@ export default function Admin() {
       
       setTestResult({
         success: true,
-        message: `✅ Success! Updated ${player.name}'s rating from ${oldRating} to 3000. Admin permissions are working!`
+        message: `✅ Success! Updated ${player.name}'s rating from ${oldRating} to 1500. Admin permissions are working!`
       })
     } catch (error) {
       setTestResult({
@@ -175,7 +175,7 @@ WHERE id = '${session.user.id}';`}
           <CardHeader>
             <CardTitle>Test Admin Permissions</CardTitle>
             <CardDescription>
-              Verify that admin write permissions are working by setting Fotten's rating to 3000.
+              Verify that admin write permissions are working by resetting Fotten's rating to 1500.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -185,7 +185,7 @@ WHERE id = '${session.user.id}';`}
               size="lg"
               className="w-full"
             >
-              Test Permissions (Set Fotten to 3000)
+              Test Permissions (Reset Fotten to 1500)
             </Button>
 
             {testResult && (

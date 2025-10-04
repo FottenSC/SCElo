@@ -7,7 +7,7 @@ export async function fetchPlayers(): Promise<Player[]> {
   try {
     const { data, error } = await supabase
       .from('players')
-      .select('id, name, twitter, created, rating, rd, volatility')
+      .select('id, name, twitter, created, rating, rd, volatility, peak_rating, peak_rating_date')
       .order('rating', { ascending: false })
     if (error) throw error
     
