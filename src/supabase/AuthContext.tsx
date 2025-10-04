@@ -60,18 +60,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       isAdmin,
       async signInWithGithub() {
-        // Ensure redirect goes back to the correct base path (e.g., GitHub Pages /eloSite/)
-        const redirectTo = new URL(import.meta.env.BASE_URL, window.location.origin).toString()
+        // Redirect to root - the hash fragment with tokens will be handled by Supabase client
+        const redirectTo = window.location.origin + import.meta.env.BASE_URL
         await supabase.auth.signInWithOAuth({
           provider: 'github',
-          options: { redirectTo },
+          options: { 
+            redirectTo,
+            skipBrowserRedirect: false
+          },
         })
       },
       async signInWithTwitter() {
-        const redirectTo = new URL(import.meta.env.BASE_URL, window.location.origin).toString()
+        // Redirect to root - the hash fragment with tokens will be handled by Supabase client
+        const redirectTo = window.location.origin + import.meta.env.BASE_URL
         await supabase.auth.signInWithOAuth({
           provider: 'twitter',
-          options: { redirectTo },
+          options: { 
+            redirectTo,
+            skipBrowserRedirect: false
+          },
         })
       },
       async signOut() {
