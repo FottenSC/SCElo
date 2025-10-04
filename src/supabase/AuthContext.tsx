@@ -21,16 +21,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let active = true
     ;(async () => {
-      // Check if we have a stored auth hash from the callback page
-      const storedHash = sessionStorage.getItem('supabase_auth_hash')
-      if (storedHash) {
-        // Set it as the current hash so Supabase can process it
-        window.location.hash = storedHash
-        sessionStorage.removeItem('supabase_auth_hash')
-        // Give Supabase a moment to process the hash
-        await new Promise(resolve => setTimeout(resolve, 100))
-      }
-      
       const { data } = await supabase.auth.getSession()
       if (!active) return
       setSession(data.session)
@@ -57,6 +47,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setIsAdmin(false)
       }
+      
+      // Clean up the URL hash after successful authentication
+      if (newSession && window.location.hash.includes('access_token')) {
+        window.location.hash = '#/'
+      }
     })
     return () => {
       active = false
@@ -70,8 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       isAdmin,
       async signInWithGithub() {
-        // Redirect to callback page which will handle the hash and redirect to /#/
-        const redirectTo = 'https://ofc.horseface.no/auth-callback.html'
+        // Redirect to root - Supabase will append #access_token=... which we'll handle
+        const redirectTo = 'https://ofc.horseface.no/'
         await supabase.auth.signInWithOAuth({
           provider: 'github',
           options: { 
@@ -81,8 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
       },
       async signInWithTwitter() {
-        // Redirect to callback page which will handle the hash and redirect to /#/
-        const redirectTo = 'https://ofc.horseface.no/auth-callback.html'
+        // Redirect to root - Supabase will append #access_token=... which we'll handle
+        const redirectTo = 'https://ofc.horseface.no/'
         await supabase.auth.signInWithOAuth({
           provider: 'twitter',
           options: { 
