@@ -60,8 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       isAdmin,
       async signInWithGithub() {
-        // Redirect to root - the hash fragment with tokens will be handled by Supabase client
-        const redirectTo = window.location.origin + import.meta.env.BASE_URL
+        // Redirect to root without hash - tokens will be in URL fragment
+        const redirectTo = 'https://ofc.horseface.no/'
         await supabase.auth.signInWithOAuth({
           provider: 'github',
           options: { 
@@ -71,8 +71,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
       },
       async signInWithTwitter() {
-        // Redirect to root - the hash fragment with tokens will be handled by Supabase client
-        const redirectTo = window.location.origin + import.meta.env.BASE_URL
+        // Redirect to root without hash - tokens will be in URL fragment
+        const redirectTo = 'https://ofc.horseface.no/'
         await supabase.auth.signInWithOAuth({
           provider: 'twitter',
           options: { 
