@@ -7,7 +7,14 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: '2rem',
+      // Reduce padding on small screens for more usable space
+      padding: {
+        DEFAULT: '0.75rem',
+        sm: '1rem',
+        md: '2rem',
+        lg: '2rem',
+        xl: '2rem',
+      },
       screens: {
         '2xl': '1400px',
       },

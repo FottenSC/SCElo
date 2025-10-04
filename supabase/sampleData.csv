@@ -16,7 +16,7 @@ Ganondeurf ,Baddy,5,1,Season 5,Ganondeurf
 Ssylus,Blade of Flame,5,2,Season 5,Ssylus
 Athena,DarthSeppius,5,2,Season 5,Athena
 D3xus,DarthSeppius,5,1,Season 5,D3xus
-Fanlee,DarthSeppius,10,3,Season 5,Fanlee
+Fanlee Jr,DarthSeppius,10,3,Season 5,Fanlee Jr
 Freemard,DarthSeppius,5,2,Season 5,Freemard
 Ganondeurf ,DarthSeppius,5,2,Season 5,Ganondeurf 
 Scarlet,DarthSeppius,5,4,Season 5,Scarlet
@@ -24,7 +24,7 @@ Ssylus,DarthSeppius,5,1,Season 5,Ssylus
 Fotten,Darxy,5,0,Season 5,Fotten
 Lars,FateKuru,5,0,Season 5,Lars
 Freemard,Fotten,5,2,Season 5,Freemard
-Lev,Fotten,5,4,Season 5,Lev
+Lev77,Fotten,5,4,Season 5,Lev77
 Patrick,Frieden,5,1,Season 5,Patrick
 Habaduba,Ganondeurf,5,3,Season 5,Habaduba
 Domitto,Ganondeurf,5,4,Season 5,Domitto
@@ -41,21 +41,21 @@ WorldBranstar,Jabberjayjay,5,4,Season 5,WorldBranstar
 GasparSC,Jumpie,5,0,Season 5,GasparSC
 GasparSC,Jumpie,5,1,Season 5,GasparSC
 Mental,Jumpie,5,3,Season 5,Mental
-Mo[M]otehk,Jumpie,5,4,Season 5,Mo[M]otehk
+Momotehk,Jumpie,5,4,Season 5,Momotehk
 Ozhora,Jumpie,5,4,Season 5,Ozhora
 Tadlos,Jumpie,5,2,Season 5,Tadlos
 The Arpeggiator,Jumpie,5,0,Season 5,The Arpeggiator
 Volty,Jumpie,5,2,Season 5,Volty
 Zollith,Jumpie,5,1,Season 5,Zollith
 Jumpie,Junky,5,0,Season 5,Jumpie
-Momo,Junky,5,0,Season 5,Momo
+Momotehk,Junky,5,0,Season 5,Momotehk
 X-Ray,Junky,5,3,Season 5,X-Ray
 Lyonide,Kellerak,5,3,Season 5,Lyonide
 Mental,Kellerak,5,4,Season 5,Mental
 TotemGenbu,Kellerak,5,3,Season 5,TotemGenbu
 Valhanya,Kellerak,5,1,Season 5,Valhanya
 WorldBranstar,Kellerak,5,0,Season 5,WorldBranstar
-Lyonide,LEV77,5,2,Season 5,Lyonide
+Lyonide,Lev77,5,2,Season 5,Lyonide
 Freemard,Loz Kias,5,2,Season 5,Freemard
 Fotten,Lyonide,5,4,Season 5,Fotten
 Freemard,Lyonide,5,2,Season 5,Freemard
@@ -96,7 +96,7 @@ Ganondeurf ,Ssylus,5,4,Season 5,Ganondeurf
 Yin,Ssylus,5,1,Season 5,Yin
 GasparSC,Tadlos,5,0,Season 5,GasparSC
 Jumpie,Tadlos,5,4,Season 5,Jumpie
-Momo,Tadlos,5,1,Season 5,Momo
+Momotehk,Tadlos,5,1,Season 5,Momotehk
 Scarlet,Tadlos,5,1,Season 5,Scarlet
 SomethingRefined,Tadlos,5,0,Season 5,SomethingRefined
 ZER0,Tadlos,5,3,Season 5,ZER0
@@ -118,7 +118,7 @@ Mental,WorldBranstar,5,4,Season 5,Mental
 Ssylus,WorldBranstar,5,1,Season 5,Ssylus
 Horken,X-Ray,5,0,Season 5,Horken
 Jumpie,X-Ray,5,2,Season 5,Jumpie
-Momo,X-Ray,5,3,Season 5,Momo
+Momotehk,X-Ray,5,3,Season 5,Momotehk
 MonkeyKing,X-Ray,5,3,Season 5,MonkeyKing
 Scarlet,X-Ray,5,2,Season 5,Scarlet
 Tadlos,X-Ray,5,1,Season 5,Tadlos
@@ -162,12 +162,12 @@ TaokakaMeow,Jazair,5,2,Season 4,TaokakaMeow
 Amancio Ortega,Jumpie,5,1,Season 4,Amancio Ortega
 nins,Jumpie,5,4,Season 4,nins
 Amancio Ortega,Kusoge,5,0,Season 4,Amancio Ortega
-Fanlee Jr,LEV77,5,1,Season 4,Fanlee Jr
-"""Guilu",Loz Kias,5,2,Season 4,"""Guilu"
+Fanlee Jr,Lev77,5,1,Season 4,Fanlee Jr
+Guilu,Loz Kias,5,2,Season 4,Guilu
 Zollith,Lyonide,5,2,Season 4,Zollith
 Afflatus Misery,Mental,5,3,Season 4,Afflatus Misery
 Hamidumi,Miha Senju,5,1,Season 4,Hamidumi
-Mo[M]otehk,Miha Senju,5,3,Season 4,Mo[M]otehk
+Momotehk,Miha Senju,5,3,Season 4,Momotehk
 Afflatus Misery,Momotehk,5,1,Season 4,Afflatus Misery
 Cpt-GI,Momotehk,5,1,Season 4,Cpt-GI
 The Arpeggiator,Momotehk,5,0,Season 4,The Arpeggiator
@@ -177,7 +177,7 @@ Tadlos,Pikapi,5,0,Season 4,Tadlos
 Tadlos,Pikapi,5,3,Season 4,Tadlos
 Greywall,Polosaty,5,0,Season 4,Greywall
 Kellerak,Polosaty,5,1,Season 4,Kellerak
-Mo[M]otehk,Polosaty,5,4,Season 4,Mo[M]otehk
+Momotehk,Polosaty,5,4,Season 4,Momotehk
 Jumpie,REKORDER,5,0,Season 4,Jumpie
 nins,REKORDER,5,1,Season 4,nins
 Kellerak,Sekirei,5,4,Season 4,Kellerak
@@ -204,6 +204,10 @@ Ventras,WorldBranstar,5,1,Season 4,Ventras
 SHeF-87,Zephyrion,5,2,Season 4,SHeF-87
 VileMuffin,Zephyrion,5,1,Season 4,VileMuffin
 Zollith,Zephyrion,5,4,Season 4,Zollith
+D3xus,Aelz,5,0,Season 3,D3xus
+Ssylus,Ganondeurf,5,0,Season 3,Ssylus
+Loz Kias,WorldBranstar,5,0,Season 3,Loz Kias
+MonkeyKing,Fotten,5,0,Season 3,MonkeyKing
 Zollith,Aby,5,4,Season 3,Zollith
 Hazu,Afflatus Misery,5,2,Season 3,Hazu
 MonkeyKing,Algernon,5,3,Season 3,MonkeyKing
@@ -350,7 +354,7 @@ SHARK,TapiocaKing,5,2,Season 2,SHARK
 Tadlos,TapiocaKing,5,2,Season 2,Tadlos
 Lyonide,Taz,5,3,Season 2,Lyonide
 Aby,The Arpeggiator,5,3,Season 2,Aby
-Mo[M]otehk,The Arpeggiator,5,0,Season 2,Mo[M]otehk
+Momotehk,The Arpeggiator,5,0,Season 2,Momotehk
 Graveryl,Unicorn,5,1,Season 2,Graveryl
 Habaduba,Ventras,5,4,Season 2,Habaduba
 VileMuffin,Ventras,5,4,Season 2,VileMuffin

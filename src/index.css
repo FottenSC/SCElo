@@ -47,8 +47,9 @@
   --ring: 224.3 76.3% 48%;
 }
 
-* {
+*, *::before, *::after {
   border-color: hsl(var(--border));
+  box-sizing: border-box;
 }
 
 body {
@@ -56,4 +57,19 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Prevent media from overflowing small screens */
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Allow long table content to wrap where appropriate */
+table {
+  width: 100%;
+}
+th, td {
+  word-wrap: anywhere;
 }

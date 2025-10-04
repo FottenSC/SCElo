@@ -5,6 +5,7 @@ import { supabase } from './client'
 type AuthContextValue = {
   session: Session | null
   loading: boolean
+  isAdmin: boolean
   signInWithGithub: () => Promise<void>
   signInWithTwitter: () => Promise<void>
   signOut: () => Promise<void>
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -22,10 +24,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data } = await supabase.auth.getSession()
       if (!active) return
       setSession(data.session)
+      
+      // Check admin status from app_metadata
+      if (data.session?.user) {
+        const appMetadata = data.session.user.app_metadata as { role?: string }
+        if (active) {
+          setIsAdmin(appMetadata?.role === 'admin')
+        }
+      } else {
+        setIsAdmin(false)
+      }
+      
       setLoading(false)
     })()
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       setSession(newSession)
+      
+      // Check admin status on auth change from app_metadata
+      if (newSession?.user) {
+        const appMetadata = newSession.user.app_metadata as { role?: string }
+        setIsAdmin(appMetadata?.role === 'admin')
+      } else {
+        setIsAdmin(false)
+      }
     })
     return () => {
       active = false
@@ -37,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       session,
       loading,
+      isAdmin,
       async signInWithGithub() {
         // Ensure redirect goes back to the correct base path (e.g., GitHub Pages /eloSite/)
         const redirectTo = new URL(import.meta.env.BASE_URL, window.location.origin).toString()
@@ -56,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await supabase.auth.signOut()
       },
     }),
-    [session, loading],
+    [session, loading, isAdmin],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -35,7 +35,7 @@ export async function fetchMatches(): Promise<Match[]> {
   try {
     const { data, error } = await supabase
       .from('matches')
-      .select('id, player1_id, player2_id, winner_id, is_fake_data, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order')
+      .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link')
       .order('id', { ascending: false })
     if (error) throw error
     return (data ?? []) as Match[]
@@ -49,7 +49,7 @@ export async function fetchCompletedMatches(): Promise<Match[]> {
   try {
     const { data, error } = await supabase
       .from('matches')
-      .select('id, player1_id, player2_id, winner_id, is_fake_data, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order')
+      .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link')
       .not('winner_id', 'is', null)
       .order('id', { ascending: false })
     if (error) throw error
@@ -64,7 +64,7 @@ export async function fetchUpcomingMatches(): Promise<Match[]> {
   try {
     const { data, error } = await supabase
       .from('matches')
-      .select('id, player1_id, player2_id, winner_id, is_fake_data, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order')
+      .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link')
       .is('winner_id', null)
       .order('match_order', { ascending: true })
     if (error) throw error
@@ -113,7 +113,7 @@ export function usePlayersAndMatches() {
     let active = true
     ;(async () => {
       try {
-        const [p, m] = await Promise.all([fetchPlayers(), fetchCompletedMatches()])
+  const [p, m] = await Promise.all([fetchPlayers(), fetchCompletedMatches()])
         if (!active) return
         setPlayers(p)
         setMatches(m)

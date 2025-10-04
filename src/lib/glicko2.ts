@@ -54,23 +54,37 @@ export function update(player: Rating, results: Array<{ opponent: Rating; score:
   let A = a
   let B: number
   if (delta * delta > phi * phi + v) {
-    B = Math.log(delta * delta - phi * phi - v)
+    B = Math.log(Math.max(delta * delta - phi * phi - v, eps))
   } else {
     let k = 1
-    while (f(a - k * TAU, delta, phi, v, a) < 0) k++
+    const MAX_K = 1000
+    while (f(a - k * TAU, delta, phi, v, a) < 0 && k < MAX_K) k++
+    if (k >= MAX_K) {
+      // Fail safe: return unchanged rating to avoid infinite loop
+      return player
+    }
     B = a - k * TAU
   }
   let fA = f(A, delta, phi, v, a)
   let fB = f(B, delta, phi, v, a)
-  while (Math.abs(B - A) > eps) {
+  let iterations = 0
+  const MAX_ITERATIONS = 100
+  while (Math.abs(B - A) > eps && iterations < MAX_ITERATIONS) {
     const C = A + ((A - B) * fA) / (fB - fA)
     const fC = f(C, delta, phi, v, a)
     if (fC * fB < 0) {
       A = B
       fA = fB
+    } else {
+      // Illinois method safeguard
+      fA /= 2
     }
     B = C
     fB = fC
+    iterations++
+  }
+  if (iterations >= MAX_ITERATIONS || !isFinite(A)) {
+    return player
   }
   const newSigma = Math.exp(A / 2)
 
@@ -83,7 +97,11 @@ export function update(player: Rating, results: Array<{ opponent: Rating; score:
     return sum + gphi * (r.score - e)
   }, 0)
 
-  return fromG(muNew, phiNew, newSigma)
+  const next = fromG(muNew, phiNew, newSigma)
+  if (!isFinite(next.rating) || !isFinite(next.rd) || !isFinite(next.vol)) {
+    return player
+  }
+  return next
 }
 
 function f(x: number, delta: number, phi: number, v: number, a: number) {

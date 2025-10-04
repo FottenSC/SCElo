@@ -1,17 +1,33 @@
 import * as React from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useSearchParams } from 'react-router-dom'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Pagination } from '@/components/ui/pagination'
 import { usePlayersAndMatches, fetchEvents } from '@/lib/data'
-import { Link } from 'react-router-dom'
-import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
-import { formatRatingChange } from '@/lib/predictions'
+import { MatchCard } from '@/components/MatchCard'
 import type { Event } from '@/types/models'
+
+const ITEMS_PER_PAGE = 25
 
 export default function Matches() {
   const { players, matches, loading } = usePlayersAndMatches()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [events, setEvents] = React.useState<Event[]>([])
-  const [query, setQuery] = React.useState('')
+  
+  // Initialize state from URL params
+  const [query, setQuery] = React.useState(() => searchParams.get('search') || '')
+  const [currentPage, setCurrentPage] = React.useState(() => {
+    const page = searchParams.get('page')
+    return page ? parseInt(page, 10) : 1
+  })
+  
+  // Update URL when state changes
+  React.useEffect(() => {
+    const params = new URLSearchParams()
+    if (currentPage !== 1) params.set('page', currentPage.toString())
+    if (query) params.set('search', query)
+    setSearchParams(params, { replace: true })
+  }, [currentPage, query, setSearchParams])
   
   React.useEffect(() => {
     let active = true
@@ -34,6 +50,20 @@ export default function Matches() {
     const q = query.toLowerCase()
     return p1.toLowerCase().includes(q) || p2.toLowerCase().includes(q)
   })
+  
+  // Pagination calculations
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  const paginatedMatches = React.useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    const end = start + ITEMS_PER_PAGE
+    return filtered.slice(start, end)
+  }, [filtered, currentPage])
+  
+  // Reset to page 1 when search query changes
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [query])
+  
   return (
     <section className="space-y-4">
       <h2 className="text-xl font-semibold">Matches</h2>
@@ -45,118 +75,50 @@ export default function Matches() {
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Matches</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-muted-foreground">
-                <tr className="border-b">
-                  <th className="py-2 pr-4">Player A</th>
-                  <th className="py-2 pr-4">Rating Δ</th>
-                  <th className="py-2 pr-4">Player B</th>
-                  <th className="py-2 pr-4">Rating Δ</th>
-                  <th className="py-2 pr-4">Winner</th>
-                  <th className="py-2 pr-4">Event</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((m) => {
-                  const p1 = byId.get(m.player1_id)
-                  const p2 = byId.get(m.player2_id)
-                  const winner = m.winner_id ? byId.get(m.winner_id) : null
-                  const event = m.event_id ? eventById.get(m.event_id) : null
-                  const isP1Winner = m.winner_id === m.player1_id
-                  return (
-                    <tr className="border-b last:border-0" key={m.id}>
-                      <td className="py-2 pr-4">
-                        {p1 ? (
-                          <Link 
-                            className="flex items-center gap-2 text-primary hover:underline" 
-                            to={`/players/${m.player1_id}`}
-                          >
-                            <Avatar className="h-6 w-6">
-                              <AvatarImage 
-                                src={getPlayerAvatarUrl(p1.twitter, 36, p1.name)} 
-                                alt={p1.name}
-                              />
-                              <AvatarFallback className="text-xs">
-                                {getPlayerInitials(p1.name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className={isP1Winner ? 'font-semibold' : ''}>{p1.name}</span>
-                          </Link>
-                        ) : (
-                          <span className="text-muted-foreground">{m.player1_id}</span>
-                        )}
-                      </td>
-                      <td className="py-2 pr-4 text-sm font-medium">
-                        {m.rating_change_p1 !== null && m.rating_change_p1 !== undefined ? (
-                          <span className={m.rating_change_p1 >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                            {formatRatingChange(m.rating_change_p1)}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="py-2 pr-4">
-                        {p2 ? (
-                          <Link 
-                            className="flex items-center gap-2 text-primary hover:underline" 
-                            to={`/players/${m.player2_id}`}
-                          >
-                            <Avatar className="h-6 w-6">
-                              <AvatarImage 
-                                src={getPlayerAvatarUrl(p2.twitter, 36, p2.name)} 
-                                alt={p2.name}
-                              />
-                              <AvatarFallback className="text-xs">
-                                {getPlayerInitials(p2.name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className={!isP1Winner ? 'font-semibold' : ''}>{p2.name}</span>
-                          </Link>
-                        ) : (
-                          <span className="text-muted-foreground">{m.player2_id}</span>
-                        )}
-                      </td>
-                      <td className="py-2 pr-4 text-sm font-medium">
-                        {m.rating_change_p2 !== null && m.rating_change_p2 !== undefined ? (
-                          <span className={m.rating_change_p2 >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                            {formatRatingChange(m.rating_change_p2)}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="py-2 pr-4 font-medium">
-                        {winner ? (
-                          <Link className="text-primary hover:underline" to={`/players/${m.winner_id}`}>
-                            {winner.name}
-                          </Link>
-                        ) : (
-                          <span className="text-muted-foreground">{m.winner_id}</span>
-                        )}
-                      </td>
-                      <td className="py-2 pr-4 text-sm">
-                        {event ? (
-                          <Link className="text-primary hover:underline" to={`/events/${event.id}`}>
-                            {event.title}
-                          </Link>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      
+      {paginatedMatches.length === 0 ? (
+        <Card>
+          <CardContent className="py-8">
+            <p className="text-muted-foreground text-center">
+              {query ? `No matches found for "${query}"` : 'No matches found'}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {paginatedMatches.map((m) => {
+            const p1 = byId.get(m.player1_id)
+            const p2 = byId.get(m.player2_id)
+            const event = m.event_id ? eventById.get(m.event_id) : null
+            
+            if (!p1 || !p2) {
+              return null
+            }
+            
+            return (
+              <MatchCard
+                key={m.id}
+                match={m}
+                player1={p1}
+                player2={p2}
+                event={event}
+                showEventLink={true}
+                showLinksInHeader={true}
+              />
+            )
+          })}
+        </div>
+      )}
+      
+      {filtered.length > ITEMS_PER_PAGE && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          itemsPerPage={ITEMS_PER_PAGE}
+          totalItems={filtered.length}
+        />
+      )}
     </section>
   )
 }

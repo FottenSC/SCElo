@@ -62,14 +62,31 @@ export function rate(current: Rating, matches: Match[]): Rating {
     B = Math.log(delta * delta - phi * phi - v)
   } else {
     let k = 1
-    while (f(a - k * TAU, delta, phi, v, a) < 0) k++
+    const MAX_K = 1000 // Prevent infinite loop when searching for B
+    while (f(a - k * TAU, delta, phi, v, a) < 0 && k < MAX_K) k++
+    if (k >= MAX_K) {
+      console.error(`❌ Glicko-2 convergence failure: Could not find initial B value`, {
+        currentRating: current.rating,
+        currentRd: current.rd,
+        currentVol: current.vol,
+        matchCount: matches.length,
+        delta,
+        phi,
+        v
+      })
+      throw new Error(`Glicko-2 failed to converge: couldn't find initial B value for rating ${current.rating}`)
+    }
     B = a - k * TAU
   }
 
   let fA = f(A, delta, phi, v, a)
   let fB = f(B, delta, phi, v, a)
 
-  while (Math.abs(B - A) > 1e-6) {
+  // Add iteration limit to prevent infinite loops
+  let iterations = 0
+  const MAX_ITERATIONS = 100
+
+  while (Math.abs(B - A) > 1e-6 && iterations < MAX_ITERATIONS) {
     const C = A + ((A - B) * fA) / (fB - fA)
     const fC = f(C, delta, phi, v, a)
     if (fC * fB < 0) {
@@ -80,6 +97,22 @@ export function rate(current: Rating, matches: Match[]): Rating {
     }
     B = C
     fB = fC
+    iterations++
+  }
+
+  if (iterations >= MAX_ITERATIONS) {
+    console.error(`❌ Glicko-2 convergence failure: Reached max iterations`, {
+      currentRating: current.rating,
+      currentRd: current.rd,
+      currentVol: current.vol,
+      matchCount: matches.length,
+      opponentRatings: matches.map(m => m.opponent.rating),
+      finalConvergenceGap: Math.abs(B - A),
+      iterations,
+      A,
+      B
+    })
+    throw new Error(`Glicko-2 failed to converge after ${MAX_ITERATIONS} iterations for rating ${current.rating}`)
   }
 
   const sigmaPrime = Math.exp(A / 2)
@@ -91,11 +124,25 @@ export function rate(current: Rating, matches: Match[]): Rating {
   // New rating
   const muPrime = mu + phiPrime * phiPrime * deltaSum
 
-  return {
+  const result = {
     rating: toR(muPrime),
     rd: phiPrime * SCALE,
     vol: sigmaPrime,
   }
+
+  // Validate results
+  if (!isFinite(result.rating) || !isFinite(result.rd) || !isFinite(result.vol)) {
+    console.error('❌ Invalid Glicko-2 result: NaN or Infinity detected', {
+      result,
+      current,
+      matchCount: matches.length,
+      matches: matches.map(m => ({ opponent: m.opponent.rating, score: m.score })),
+      intermediateValues: { mu, phi, sigma, v, delta, sigmaPrime, phiStar, phiPrime, muPrime }
+    })
+    throw new Error(`Glicko-2 produced invalid result: rating=${result.rating}, rd=${result.rd}, vol=${result.vol}`)
+  }
+
+  return result
 }
 
 function f(x: number, delta: number, phi: number, v: number, a: number) {
