@@ -20,32 +20,22 @@ function format(num: number, digits = 0) {
 }
 
 export default function Player() {
-  const { id } = useParams<{ id: string }>()
-  const playerId = id ? parseInt(id, 10) : undefined
-  const { players, matches, loading } = usePlayersAndMatches()
-  const { openMatch } = useMatchModal()
+  const { id } = useParams()
+  const playerId = parseInt(id!)
   const [searchParams, setSearchParams] = useSearchParams()
+  const currentPage = parseInt(searchParams.get('page') || '1', 10)
+  const { openMatch } = useMatchModal()
+  const [historyCount, setHistoryCount] = useState<10 | 50 | 'all'>(10)
   
-  // Initialize state from URL params
-  const [currentPage, setCurrentPage] = useState(() => {
-    const page = searchParams.get('page')
-    return page ? parseInt(page, 10) : 1
-  })
+  const { players, matches, loading } = usePlayersAndMatches()
   const [events, setEvents] = useState<Event[]>([])
   
-  // Update URL when page changes
-  useEffect(() => {
-    const params = new URLSearchParams()
-    if (currentPage !== 1) params.set('page', currentPage.toString())
-    setSearchParams(params, { replace: true })
-  }, [currentPage, setSearchParams])
-
   useEffect(() => {
     let active = true
     ;(async () => {
-      const e = await fetchEvents()
+      const ev = await fetchEvents()
       if (!active) return
-      setEvents(e)
+      setEvents(ev)
     })()
     return () => { active = false }
   }, [])
@@ -87,18 +77,21 @@ export default function Player() {
     return { w, l, winRate, recentForm }
   }, [myMatches, playerId])
 
-  // Rating progression over last 10 games
+  // Rating progression based on selected count
   const ratingHistory = useMemo(() => {
     if (!player) return []
     
-    // Get last 10 matches in chronological order (oldest to newest)
-    const last10 = [...myMatches].slice(0, 10).reverse()
+    // Determine how many matches to show
+    const count = historyCount === 'all' ? myMatches.length : historyCount
     
-    if (last10.length === 0) return []
+    // Get last N matches in chronological order (oldest to newest)
+    const selectedMatches = [...myMatches].slice(0, count).reverse()
+    
+    if (selectedMatches.length === 0) return []
     
     // Calculate the starting rating by working backwards from current rating
     let startingRating = player.rating
-    for (const m of last10) {
+    for (const m of selectedMatches) {
       if (!m.winner_id) continue
       const ratingChange = m.player1_id === playerId ? (m.rating_change_p1 || 0) : (m.rating_change_p2 || 0)
       startingRating -= ratingChange
@@ -116,7 +109,7 @@ export default function Player() {
     }> = []
     let currentRating = startingRating
     
-    last10.forEach((m, index) => {
+    selectedMatches.forEach((m, index) => {
       if (!m.winner_id) return
       
       const ratingChange = m.player1_id === playerId ? (m.rating_change_p1 || 0) : (m.rating_change_p2 || 0)
@@ -139,7 +132,7 @@ export default function Player() {
     })
     
     return history
-  }, [myMatches, playerId, player, players, events])
+  }, [myMatches, playerId, player, players, events, historyCount])
   
   // Pagination calculations
   const totalPages = Math.ceil(myMatches.length / ITEMS_PER_PAGE)
@@ -148,6 +141,10 @@ export default function Player() {
     const end = start + ITEMS_PER_PAGE
     return myMatches.slice(start, end)
   }, [myMatches, currentPage])
+  
+  const setCurrentPage = (page: number) => {
+    setSearchParams({ page: page.toString() })
+  }
 
   return (
     <section className="space-y-4">
@@ -302,60 +299,111 @@ export default function Player() {
           {ratingHistory.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <TrendingUp size={18} className="text-purple-500" />
-                  Rating Progression
-                </CardTitle>
-                <CardDescription>Last {ratingHistory.length} matches</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <TrendingUp size={18} className="text-purple-500" />
+                      Rating Progression
+                    </CardTitle>
+                    <CardDescription>Last {ratingHistory.length} matches</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setHistoryCount(10)}
+                      className={`px-3 py-1 text-sm rounded transition-colors ${
+                        historyCount === 10
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                      }`}
+                    >
+                      10
+                    </button>
+                    <button
+                      onClick={() => setHistoryCount(50)}
+                      className={`px-3 py-1 text-sm rounded transition-colors ${
+                        historyCount === 50
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                      }`}
+                    >
+                      50
+                    </button>
+                    <button
+                      onClick={() => setHistoryCount('all')}
+                      className={`px-3 py-1 text-sm rounded transition-colors ${
+                        historyCount === 'all'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                      }`}
+                    >
+                      All
+                    </button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {/* Simple line graph using divs */}
-                  <div className="relative h-32 flex items-end justify-between gap-1">
-                    {ratingHistory.map((point, index) => {
-                      const allRatings = ratingHistory.map(p => p.rating)
-                      const minRating = Math.min(...allRatings)
-                      const maxRating = Math.max(...allRatings)
-                      const range = maxRating - minRating || 1
-                      const heightPercent = ((point.rating - minRating) / range) * 100
-                      
-                      return (
-                        <div key={index} className="flex-1 flex flex-col items-center gap-1 group">
-                          <div className="relative w-full flex items-end justify-center" style={{ height: '100px' }}>
-                            <button
-                              onClick={() => openMatch(point.matchId)}
-                              className={`w-full rounded-t transition-all cursor-pointer ${
-                                point.won 
-                                  ? 'bg-green-500/30 hover:bg-green-500/50' 
-                                  : 'bg-red-500/30 hover:bg-red-500/50'
-                              }`}
-                              style={{ height: `${Math.max(heightPercent, 5)}%` }}
-                            >
-                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium whitespace-nowrap">
-                                {format(point.rating, 0)}
-                              </div>
-                            </button>
-                            
-                            {/* Tooltip on hover */}
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10 pointer-events-none">
-                              <div className="bg-popover text-popover-foreground px-3 py-2 rounded-md shadow-lg border text-xs whitespace-nowrap">
-                                <div className="font-semibold">{point.won ? '✓ Win' : '✗ Loss'} vs {point.opponentName}</div>
-                                <div className="text-muted-foreground mt-1">
-                                  Rating: <span className="font-medium text-foreground">{format(point.rating, 0)}</span>
-                                  <span className={point.change >= 0 ? 'text-green-600 dark:text-green-400 ml-1' : 'text-red-600 dark:text-red-400 ml-1'}>
-                                    ({point.change >= 0 ? '+' : ''}{point.change.toFixed(1)})
-                                  </span>
-                                </div>
-                                {point.eventTitle && (
-                                  <div className="text-muted-foreground mt-1">Event: {point.eventTitle}</div>
+                  <div className="relative h-32 overflow-x-auto pb-2" style={{ overflowY: 'visible' }}>
+                    <div className={`flex items-end justify-between ${ratingHistory.length > 50 ? 'gap-0.5' : ratingHistory.length > 20 ? 'gap-1' : 'gap-1'} px-2`} style={{ minWidth: ratingHistory.length > 50 ? `${ratingHistory.length * 8}px` : '100%' }}>
+                      {ratingHistory.map((point, index) => {
+                        const allRatings = ratingHistory.map(p => p.rating)
+                        const minRating = Math.min(...allRatings)
+                        const maxRating = Math.max(...allRatings)
+                        const range = maxRating - minRating || 1
+                        const heightPercent = ((point.rating - minRating) / range) * 100
+                        
+                        // Show rating number only for certain points based on count
+                        const showRatingNumber = ratingHistory.length <= 20 || index % Math.ceil(ratingHistory.length / 20) === 0
+                        
+                        // Adjust tooltip position for edge cases
+                        const isNearEnd = index >= ratingHistory.length - 2
+                        const isNearStart = index <= 1
+                        
+                        return (
+                          <div key={index} className="flex-1 flex flex-col items-center gap-1 group" style={{ minWidth: ratingHistory.length > 50 ? '6px' : 'auto' }}>
+                            <div className="relative w-full flex items-end justify-center" style={{ height: '100px' }}>
+                              <button
+                                onClick={() => openMatch(point.matchId)}
+                                className={`w-full rounded-t transition-all cursor-pointer ${
+                                  point.won 
+                                    ? 'bg-green-500/30 hover:bg-green-500/50' 
+                                    : 'bg-red-500/30 hover:bg-red-500/50'
+                                }`}
+                                style={{ height: `${Math.max(heightPercent, 5)}%` }}
+                              >
+                                {showRatingNumber && (
+                                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium whitespace-nowrap">
+                                    {format(point.rating, 0)}
+                                  </div>
                                 )}
+                              </button>
+                              
+                              {/* Tooltip on hover - adjust position for edges */}
+                              <div className={`absolute bottom-full mb-2 hidden group-hover:block z-50 pointer-events-none ${
+                                isNearEnd ? 'right-0' : isNearStart ? 'left-0' : 'left-1/2 -translate-x-1/2'
+                              }`}>
+                                <div className="bg-popover text-popover-foreground px-3 py-2 rounded-md shadow-lg border text-xs whitespace-nowrap">
+                                  <div className="font-semibold">{point.won ? '✓ Win' : '✗ Loss'} vs {point.opponentName}</div>
+                                  <div className="text-muted-foreground mt-1">
+                                    Rating: <span className="font-medium text-foreground">{format(point.rating, 0)}</span>
+                                    <span className={point.change >= 0 ? 'text-green-600 dark:text-green-400 ml-1' : 'text-red-600 dark:text-red-400 ml-1'}>
+                                      ({point.change >= 0 ? '+' : ''}{point.change.toFixed(1)})
+                                    </span>
+                                  </div>
+                                  {point.eventTitle && (
+                                    <div className="text-muted-foreground mt-1">Event: {point.eventTitle}</div>
+                                  )}
+                                </div>
                               </div>
                             </div>
+                            {(ratingHistory.length <= 20 || index % Math.ceil(ratingHistory.length / 20) === 0) && (
+                              <div className="text-xs text-muted-foreground">{point.matchNum}</div>
+                            )}
                           </div>
-                          <div className="text-xs text-muted-foreground">{point.matchNum}</div>
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
+                    </div>
                   </div>
                   
                   {/* Legend */}

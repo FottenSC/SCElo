@@ -1,8 +1,16 @@
 import { useState } from 'react'
 import { recalculateAllRatingsAsEvents, type RecalculationProgress } from '@/lib/ratings-events'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card              )}
+            </div>
+          </CardContent>
+        </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  )
+} { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/supabase/AuthContext'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '@/supabase/client'
@@ -125,8 +133,7 @@ export default function Admin() {
               </p>
               <pre className="bg-muted p-3 rounded mt-2 text-xs overflow-x-auto">
 {`UPDATE auth.users
-SET raw_app_meta_data = 
-  raw_app_meta_data || '{"role": "admin"}'::jsonb
+SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'admin')
 WHERE id = '${session.user.id}';`}
               </pre>
               <p className="text-sm text-muted-foreground mt-2">
@@ -276,8 +283,6 @@ WHERE id = '${session.user.id}';`}
             </div>
           </CardContent>
         </Card>
-          </TabsContent>
-        </Tabs>
       </div>
     </div>
   )

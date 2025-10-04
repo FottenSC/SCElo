@@ -8,30 +8,36 @@ const csvContent = fs.readFileSync(csvPath, 'utf-8');
 // Parse CSV
 const lines = csvContent.trim().split('\n');
 const headers = lines[0].split(',');
-const data = lines.slice(1);
+const data = lines.slice(1).filter(line => line.trim().length > 0);
 
-// Extract unique events
-const events = [...new Set(data.map(line => {
-  const parts = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
-  if (!parts || parts.length < 6) return null;
-  return parts[4].replace(/^"|"$/g, '').trim();
-}).filter(v => v !== null))];
-
-// Generate SQL values with row index to preserve original order
-const values = data.map((line, idx) => {
+// Parse and sort data by OrderBy column
+const parsedData = data.map((line) => {
   // Split by comma, handling quoted values
   const parts = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
-  if (!parts || parts.length < 6) return null;
+  if (!parts || parts.length < 7) return null;
   
-  const player1 = parts[0].replace(/^"+|"+$/g, '').replace(/'/g, "''").trim();
-  const player2 = parts[1].replace(/^"+|"+$/g, '').replace(/'/g, "''").trim();
-  const player1_score = parts[2].trim();
-  const player2_score = parts[3].trim();
-  const event = parts[4].replace(/^"+|"+$/g, '').trim();
-  const winner = parts[5].replace(/^"+|"+$/g, '').replace(/'/g, "''").trim();
+  const orderBy = parseInt(parts[0].trim()) || 0;
+  const player1 = parts[1].replace(/^"+|"+$/g, '').replace(/'/g, "''").trim();
+  const player2 = parts[2].replace(/^"+|"+$/g, '').replace(/'/g, "''").trim();
+  const player1_score = parts[3].trim();
+  const player2_score = parts[4].trim();
+  const event = parts[5].replace(/^"+|"+$/g, '').trim();
+  const winner = parts[6].replace(/^"+|"+$/g, '').replace(/'/g, "''").trim();
   
-  return `  (${idx}, '${player1}','${player2}',${player1_score},${player2_score},'${event}','${winner}')`;
+  return { orderBy, player1, player2, player1_score, player2_score, event, winner };
 }).filter(v => v !== null);
+
+// Sort by OrderBy column in ASCENDING order so oldest matches get lowest IDs
+// This ensures match IDs follow chronological order (oldest = ID 1, newest = highest ID)
+parsedData.sort((a, b) => a.orderBy - b.orderBy);
+
+// Extract unique events
+const events = [...new Set(parsedData.map(match => match.event))];
+
+// Generate SQL values with match_order from OrderBy
+const values = parsedData.map((match, idx) => {
+  return `  (${match.orderBy}, '${match.player1}','${match.player2}',${match.player1_score},${match.player2_score},'${match.event}','${match.winner}')`;
+});
 
 // Generate seed.sql file
 const sqlContent = `-- Seed data generated from sampleData.csv
