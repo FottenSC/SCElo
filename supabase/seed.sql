@@ -503,14 +503,11 @@ BEGIN
       WHERE P.name = T.name
     );
 
-  -- Remove previous seed data
-  DELETE FROM matches WHERE is_fake_data = true;
-
   -- Insert match data
   INSERT INTO matches(
     player1_id, player1_score,
     player2_id, player2_score, 
-    winner_id, event_id, is_fake_data,
+    winner_id, event_id, 
     match_order
   )
   SELECT
@@ -518,7 +515,6 @@ BEGIN
     P2.id, S.player2score,
     W.id,
     E.id,
-    true,
     S.row_index
   FROM seeddata as S
   INNER JOIN players AS P1 ON P1.name = S.player1
@@ -527,4 +523,11 @@ BEGIN
   INNER JOIN events AS E ON E.title = S.event;
 
   DROP TABLE seeddata;
+
+
+  UPDATE matches
+  SET vod_link = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+
+  UPDATE events
+  SET vod_link = 'https://youtu.be/1sFbLppuhhs?si=JUlABkFdrF5MYYvy';
 END $$;
