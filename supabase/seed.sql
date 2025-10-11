@@ -423,7 +423,7 @@ BEGIN
     (406, 'LEV77','Fotten',5,4,'Season 5','LEV77'),
     (407, 'Ozhora','Jumpie',5,4,'Season 5','Ozhora'),
     (408, 'Freemard','Lyonide',5,2,'Season 5','Freemard'),
-    (409, 'Kellerak','Jabberjayjay',5,3,'Season 5','Kellerak'),
+    (409, 'Kellerak','JabberJayJay',5,3,'Season 5','Kellerak'),
     (410, 'Scarlet','X-Ray',5,2,'Season 5','Scarlet'),
     (411, 'The Arpeggiator','Momotehk',5,2,'Season 5','The Arpeggiator'),
     (412, 'Ssylus','DarthSeppius',5,1,'Season 5','Ssylus'),
