@@ -344,7 +344,7 @@ export default function Player() {
               <CardContent>
                 <div className="space-y-4">
                   {/* Simple line graph using divs */}
-                  <div className="relative h-32 overflow-x-auto pb-2" style={{ overflowY: 'visible' }}>
+                  <div className="relative h-32 overflow-x-auto pb-2 pt-6" style={{ overflowY: 'visible' }}>
                     <div className={`flex items-end justify-between ${ratingHistory.length > 50 ? 'gap-0.5' : ratingHistory.length > 20 ? 'gap-1' : 'gap-1'} px-2`} style={{ minWidth: ratingHistory.length > 50 ? `${ratingHistory.length * 8}px` : '100%' }}>
                       {ratingHistory.map((point, index) => {
                         const allRatings = ratingHistory.map(p => p.rating)
@@ -457,8 +457,8 @@ export default function Player() {
                       const won = m.winner_id === playerId
                       const ratingDelta = m.player1_id === playerId ? m.rating_change_p1 : m.rating_change_p2
                       const event = m.event_id ? events.find(e => e.id === m.event_id) : null
-                      const playerScore = m.player1_id === playerId ? m.player1_score : (m.player2_score ?? 0)
-                      const oppScore = m.player1_id === playerId ? (m.player2_score ?? 0) : m.player1_score
+                      const playerScore = m.player1_id === playerId ? (m.player1_score ?? '?') : (m.player2_score ?? '?')
+                      const oppScore = m.player1_id === playerId ? (m.player2_score ?? '?') : (m.player1_score ?? '?')
                       return (
                         <tr className="border-b last:border-0" key={m.id}>
                           <td className="py-2 pr-2 text-muted-foreground">

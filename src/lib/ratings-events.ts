@@ -39,7 +39,18 @@ type WorkerMessage = WorkerProgressMessage | WorkerResultMessage | WorkerErrorMe
 
 /**
  * Recalculate all ratings from scratch and store as events.
- * This creates a new "epoch" of ratings, preserving old history.
+ * 
+ * IMPORTANT: This function assumes rating_events table has been cleared
+ * before calling. It will create NEW rating events for all matches.
+ * 
+ * Call updateRatingsAfterMatch() instead for automatic cleanup + recalculation.
+ * 
+ * Process:
+ * 1. Fetches FRESH player and match data from database
+ * 2. Creates reset events for all players (starting at 1500/350/0.06)
+ * 3. Processes all completed matches in chronological order
+ * 4. Creates match events with rating changes
+ * 5. Syncs player table with final ratings
  */
 export async function recalculateAllRatingsAsEvents(
   onProgress?: (progress: RecalculationProgress) => void,
@@ -48,7 +59,7 @@ export async function recalculateAllRatingsAsEvents(
   try {
     console.log('🚀 Starting event-sourced rating recalculation...')
     
-    // Step 1: Fetch all players
+    // Step 1: Fetch FRESH player data from database
     console.log('📊 Step 1: Fetching players...')
     const { data: players, error: playersError } = await supabase
       .from('players')
@@ -61,7 +72,7 @@ export async function recalculateAllRatingsAsEvents(
     }
     console.log(`✅ Fetched ${players.length} players`)
     
-    // Step 2: Fetch all completed matches (where winner_id is not null)
+    // Step 2: Fetch FRESH match data from database (only completed matches)
     console.log('🎮 Step 2: Fetching matches...')
     const { data: matches, error: matchesError } = await supabase
       .from('matches')
@@ -70,9 +81,53 @@ export async function recalculateAllRatingsAsEvents(
       .order('id')
     
     if (matchesError) throw matchesError
+    
+    // If no matches exist, just create reset events and return
     if (!matches || matches.length === 0) {
-      throw new Error('No matches found')
+      console.log('⚠️ No completed matches found - creating reset events only')
+      
+      const resetEvents: Omit<RatingEvent, 'id' | 'created_at'>[] = players.map(player => ({
+        player_id: player.id,
+        match_id: null,
+        event_type: 'reset' as const,
+        rating: 1500,
+        rd: 350,
+        volatility: 0.06,
+        rating_change: null,
+        opponent_id: null,
+        result: null,
+        reason: resetReason
+      }))
+      
+      const { error: resetError } = await supabase
+        .from('rating_events')
+        .insert(resetEvents)
+      
+      if (resetError) throw resetError
+      console.log(`✅ Created ${resetEvents.length} reset events`)
+      
+      // Sync player table with reset ratings
+      const { error: syncError } = await supabase.rpc('sync_player_ratings_from_events')
+      
+      if (syncError) {
+        console.warn('⚠️ Failed to sync player ratings:', syncError)
+      } else {
+        console.log('✅ Player ratings synced')
+      }
+      
+      onProgress?.({
+        totalMatches: 0,
+        processedMatches: 0,
+        currentMatch: 0,
+        status: 'complete'
+      })
+      
+      return {
+        success: true,
+        eventsCreated: resetEvents.length
+      }
     }
+    
     console.log(`✅ Fetched ${matches.length} matches`)
     
     // Step 3: Create reset events for all players
@@ -291,6 +346,231 @@ export async function getPlayerPeakRatingFromEvents(playerId: number) {
   
   if (error) return null
   return data
+}
+
+/**
+ * Automatically update ratings when a match result changes
+ * This triggers a full recalculation to maintain consistency
+ * 
+ * Important: This function:
+ * 1. Deletes ALL existing rating events (resets to clean state)
+ * 2. Fetches fresh match data from database
+ * 3. Recalculates all ratings from scratch
+ * 
+ * This prevents duplicate processing and ensures consistency
+ */
+export async function updateRatingsAfterMatch(
+  onProgress?: (message: string) => void
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    onProgress?.('Updating ratings...')
+    
+    // Delete all existing rating events to prevent duplicate processing
+    console.log('🧹 Clearing existing rating events...')
+    const { error: deleteError } = await supabase
+      .from('rating_events')
+      .delete()
+      .neq('id', 0) // Delete all rows
+    
+    if (deleteError) {
+      console.error('Failed to clear rating events:', deleteError)
+      throw new Error(`Failed to clear existing ratings: ${deleteError.message}`)
+    }
+    
+    console.log('✅ Cleared all existing rating events')
+    
+    // Small delay to ensure database consistency
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    // Now recalculate from scratch with fresh data
+    const result = await recalculateAllRatingsAsEvents(
+      undefined,
+      'Auto-update after match result'
+    )
+    
+    if (result.success) {
+      onProgress?.('Ratings updated successfully')
+    }
+    
+    return result
+  } catch (error) {
+    console.error('Failed to update ratings:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error)
+    }
+  }
+}
+
+/**
+ * Check if a match can be rolled back
+ * A match can be rolled back only if BOTH players have no matches after it
+ */
+export async function canRollbackMatch(matchId: number): Promise<{ 
+  canRollback: boolean
+  reason?: string
+  player1HasLaterMatches?: boolean
+  player2HasLaterMatches?: boolean
+}> {
+  try {
+    // Get the match details
+    const { data: match, error: matchError } = await supabase
+      .from('matches')
+      .select('id, player1_id, player2_id, winner_id')
+      .eq('id', matchId)
+      .single()
+    
+    if (matchError || !match) {
+      return { canRollback: false, reason: 'Match not found' }
+    }
+    
+    // Can only rollback completed matches
+    if (!match.winner_id) {
+      return { canRollback: false, reason: 'Cannot rollback upcoming matches' }
+    }
+    
+    // Check if player1 has any matches after this one
+    const { data: player1LaterMatches, error: p1Error } = await supabase
+      .from('matches')
+      .select('id')
+      .gt('id', matchId)
+      .not('winner_id', 'is', null)
+      .or(`player1_id.eq.${match.player1_id},player2_id.eq.${match.player1_id}`)
+      .limit(1)
+    
+    if (p1Error) {
+      console.error('Error checking player1 matches:', p1Error)
+      return { canRollback: false, reason: 'Error checking match history' }
+    }
+    
+    const player1HasLaterMatches = player1LaterMatches && player1LaterMatches.length > 0
+    
+    // Check if player2 has any matches after this one
+    const { data: player2LaterMatches, error: p2Error } = await supabase
+      .from('matches')
+      .select('id')
+      .gt('id', matchId)
+      .not('winner_id', 'is', null)
+      .or(`player1_id.eq.${match.player2_id},player2_id.eq.${match.player2_id}`)
+      .limit(1)
+    
+    if (p2Error) {
+      console.error('Error checking player2 matches:', p2Error)
+      return { canRollback: false, reason: 'Error checking match history' }
+    }
+    
+    const player2HasLaterMatches = player2LaterMatches && player2LaterMatches.length > 0
+    
+    // Can only rollback if BOTH players have no later matches
+    if (player1HasLaterMatches || player2HasLaterMatches) {
+      let reason = 'Cannot rollback: '
+      if (player1HasLaterMatches && player2HasLaterMatches) {
+        reason += 'both players have played matches afterwards'
+      } else if (player1HasLaterMatches) {
+        reason += 'player 1 has played matches afterwards'
+      } else {
+        reason += 'player 2 has played matches afterwards'
+      }
+      
+      return { 
+        canRollback: false, 
+        reason,
+        player1HasLaterMatches,
+        player2HasLaterMatches
+      }
+    }
+    
+    return { 
+      canRollback: true,
+      player1HasLaterMatches: false,
+      player2HasLaterMatches: false
+    }
+  } catch (error) {
+    console.error('Error checking rollback eligibility:', error)
+    return { 
+      canRollback: false, 
+      reason: error instanceof Error ? error.message : 'Unknown error' 
+    }
+  }
+}
+
+/**
+ * Rollback a match by deleting it and recalculating ratings
+ * Only works if both players have no matches after this one
+ */
+export async function rollbackMatch(
+  matchId: number,
+  onProgress?: (message: string) => void
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    onProgress?.('Checking if match can be rolled back...')
+    
+    // First check if rollback is allowed
+    const eligibility = await canRollbackMatch(matchId)
+    
+    if (!eligibility.canRollback) {
+      return {
+        success: false,
+        error: eligibility.reason || 'Cannot rollback this match'
+      }
+    }
+    
+    // Important: remove rating events for this match prior to rollback
+    // We'll keep the match row, but revert it to an upcoming state.
+    onProgress?.('Removing rating events for match...')
+    const { error: deleteEventsError } = await supabase
+      .from('rating_events')
+      .delete()
+      .eq('match_id', matchId)
+
+    if (deleteEventsError) {
+      console.error('Failed to delete rating events for match:', deleteEventsError)
+      throw new Error(`Failed to delete rating events for match: ${deleteEventsError.message}`)
+    }
+
+    // Revert the match to upcoming by clearing winner and scores
+    onProgress?.('Reverting match to upcoming...')
+    const { error: revertError } = await supabase
+      .from('matches')
+      .update({
+        winner_id: null,
+        player1_score: null,
+        player2_score: null,
+        rating_change_p1: null,
+        rating_change_p2: null
+      })
+      .eq('id', matchId)
+
+    if (revertError) {
+      console.error('Failed to revert match:', revertError)
+      throw new Error(`Failed to revert match: ${revertError.message}`)
+    }
+    console.log(`✅ Reverted match ${matchId} to upcoming`)
+    
+    // Recalculate ratings
+    onProgress?.('Recalculating ratings...')
+    
+    const ratingResult = await updateRatingsAfterMatch((message) => {
+      onProgress?.(message)
+    })
+    
+    if (!ratingResult.success) {
+      return {
+        success: false,
+        error: `Match deleted but rating update failed: ${ratingResult.error}`
+      }
+    }
+    
+    onProgress?.('Match rolled back successfully (match reverted to upcoming)')
+    
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to rollback match:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error)
+    }
+  }
 }
 
 async function computeMatchEventsWithWorker(

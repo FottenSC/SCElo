@@ -4,10 +4,12 @@ import { Match, Player, Event } from '@/types/models'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Combobox } from '@/components/ui/combobox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Trophy, Clock, CheckCircle2 } from 'lucide-react'
+import { Trophy, Clock, CheckCircle2, RefreshCw, Undo2 } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { updateRatingsAfterMatch, canRollbackMatch, rollbackMatch } from '@/lib/ratings-events'
 
 interface ScoreFormData {
   player1_score: string
@@ -16,11 +18,13 @@ interface ScoreFormData {
 }
 
 export default function EventDashboard() {
+  const { toast } = useToast()
   const [events, setEvents] = useState<Event[]>([])
   const [selectedEventId, setSelectedEventId] = useState<string>('')
   const [matches, setMatches] = useState<Match[]>([])
   const [players, setPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [scoreDialogOpen, setScoreDialogOpen] = useState(false)
   const [editingMatch, setEditingMatch] = useState<Match | null>(null)
   const [scoreForm, setScoreForm] = useState<ScoreFormData>({
@@ -50,6 +54,11 @@ export default function EventDashboard() {
 
     if (error) {
       console.error('Error loading events:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Error loading events',
+        description: error.message
+      })
     } else {
       setEvents(data || [])
       // Auto-select the most recent event
@@ -72,10 +81,15 @@ export default function EventDashboard() {
     }
   }
 
-  const loadMatches = async () => {
+  const loadMatches = async (isRefresh = false) => {
     if (!selectedEventId) return
 
-    setLoading(true)
+    if (isRefresh) {
+      setRefreshing(true)
+    } else {
+      setLoading(true)
+    }
+    
     const { data, error } = await supabase
       .from('matches')
       .select('*')
@@ -84,10 +98,17 @@ export default function EventDashboard() {
 
     if (error) {
       console.error('Error loading matches:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Error loading matches',
+        description: error.message
+      })
     } else {
       setMatches(data || [])
     }
+    
     setLoading(false)
+    setRefreshing(false)
   }
 
   const getPlayerName = (playerId: number) => {
@@ -97,8 +118,8 @@ export default function EventDashboard() {
   const openScoreDialog = (match: Match) => {
     setEditingMatch(match)
     setScoreForm({
-      player1_score: match.winner_id ? String(match.player1_score) : '',
-      player2_score: match.player2_score ? String(match.player2_score) : '',
+      player1_score: match.player1_score !== undefined && match.player1_score !== null ? String(match.player1_score) : '',
+      player2_score: match.player2_score !== undefined && match.player2_score !== null ? String(match.player2_score) : '',
       winner_id: match.winner_id ? String(match.winner_id) : ''
     })
     setError(null)
@@ -113,13 +134,19 @@ export default function EventDashboard() {
     setError(null)
 
     try {
-      const p1Score = parseInt(scoreForm.player1_score)
-      const p2Score = parseInt(scoreForm.player2_score)
-      const winnerId = parseInt(scoreForm.winner_id)
+      const p1Score = scoreForm.player1_score !== '' ? parseInt(scoreForm.player1_score) : null
+      const p2Score = scoreForm.player2_score !== '' ? parseInt(scoreForm.player2_score) : null
+      const winnerId = scoreForm.winner_id ? parseInt(scoreForm.winner_id) : null
 
-      // Validate
-      if (!winnerId || (winnerId !== editingMatch.player1_id && winnerId !== editingMatch.player2_id)) {
-        throw new Error('Winner must be one of the two players')
+      // Validate: either set all three (completing match) or none (keep upcoming)
+      const completing = p1Score !== null || p2Score !== null || winnerId !== null
+      if (completing) {
+        if (p1Score === null || p2Score === null || winnerId === null) {
+          throw new Error('To complete a match, enter both scores and select a winner')
+        }
+        if (winnerId !== editingMatch.player1_id && winnerId !== editingMatch.player2_id) {
+          throw new Error('Winner must be one of the two players')
+        }
       }
 
       const { error } = await supabase
@@ -133,13 +160,88 @@ export default function EventDashboard() {
 
       if (error) throw error
 
+      toast({
+        title: 'Score updated',
+        description: completing ? 'Match updated. Recalculating ratings...' : 'Match kept as upcoming.'
+      })
+      
       setScoreDialogOpen(false)
-      loadMatches()
+      loadMatches(true)
+
+      // Automatically update ratings only if completed
+      if (completing) {
+        const ratingResult = await updateRatingsAfterMatch((message) => {
+          console.log('Rating update:', message)
+        })
+
+        if (ratingResult.success) {
+          toast({
+            variant: 'success',
+            title: 'Ratings updated',
+            description: 'Player ratings have been recalculated.'
+          })
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Rating update failed',
+            description: ratingResult.error || 'Failed to update ratings. Please recalculate manually from Admin page.'
+          })
+        }
+      }
     } catch (err: any) {
       setError(err.message)
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: err.message
+      })
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleRollback = async (match: Match) => {
+    // Check eligibility first
+    const eligibility = await canRollbackMatch(match.id)
+    
+    if (!eligibility.canRollback) {
+      toast({
+        variant: 'destructive',
+        title: 'Cannot rollback match',
+        description: eligibility.reason || 'This match cannot be rolled back'
+      })
+      return
+    }
+
+    const player1Name = getPlayerName(match.player1_id)
+    const player2Name = getPlayerName(match.player2_id)
+    
+    if (!confirm(`Rollback match "${player1Name} vs ${player2Name}"?\n\nThis will revert the match to an upcoming state and recalculate all ratings.`)) {
+      return
+    }
+
+    setSubmitting(true)
+    
+    const result = await rollbackMatch(match.id, (message) => {
+      console.log('Rollback progress:', message)
+    })
+
+    if (result.success) {
+      toast({
+        variant: 'success',
+        title: 'Match rolled back',
+        description: 'The match was reverted to upcoming and ratings have been recalculated.'
+      })
+      loadMatches(true)
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Rollback failed',
+        description: result.error || 'Failed to rollback match'
+      })
+    }
+    
+    setSubmitting(false)
   }
 
   const selectedEvent = events.find(e => e.id === parseInt(selectedEventId))
@@ -150,24 +252,36 @@ export default function EventDashboard() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Event Dashboard</CardTitle>
-          <CardDescription>Register scores for matches within an event</CardDescription>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle>Event Dashboard</CardTitle>
+              <CardDescription>Register scores for matches within an event</CardDescription>
+            </div>
+            {selectedEventId && (
+              <Button 
+                onClick={() => loadMatches(true)} 
+                variant="outline" 
+                size="icon"
+                disabled={refreshing}
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Select Event</Label>
-            <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose an event" />
-              </SelectTrigger>
-              <SelectContent>
-                {events.map(event => (
-                  <SelectItem key={event.id} value={String(event.id)}>
-                    {event.title} - {new Date(event.event_date).toLocaleDateString()}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={selectedEventId}
+              onValueChange={setSelectedEventId}
+              options={events.map(event => ({
+                value: String(event.id),
+                label: `${event.title} - ${new Date(event.event_date).toLocaleDateString()}`
+              }))}
+              placeholder="Choose an event"
+              searchPlaceholder="Search events..."
+            />
           </div>
 
           {selectedEvent && (
@@ -247,10 +361,9 @@ export default function EventDashboard() {
                   {completedMatches.map((match) => (
                     <div
                       key={match.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => openScoreDialog(match)}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 flex-1 cursor-pointer" onClick={() => openScoreDialog(match)}>
                         <div className="text-sm text-muted-foreground">
                           #{match.match_order || 0}
                         </div>
@@ -259,16 +372,30 @@ export default function EventDashboard() {
                             {getPlayerName(match.player1_id)}
                           </span>
                           <span className="text-muted-foreground">
-                            {match.player1_score} - {match.player2_score}
+                            {(match.player1_score ?? '?')} - {(match.player2_score ?? '?')}
                           </span>
                           <span className={match.winner_id === match.player2_id ? 'font-bold' : ''}>
                             {getPlayerName(match.player2_id)}
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Trophy className="h-4 w-4 text-yellow-500" />
-                        <span className="font-medium">{getPlayerName(match.winner_id!)}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Trophy className="h-4 w-4 text-yellow-500" />
+                          <span className="font-medium">{getPlayerName(match.winner_id!)}</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRollback(match)
+                          }}
+                          disabled={submitting}
+                          title="Rollback match (only if both players have no matches afterwards)"
+                        >
+                          <Undo2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -315,7 +442,6 @@ export default function EventDashboard() {
                       min="0"
                       value={scoreForm.player1_score}
                       onChange={(e) => setScoreForm({ ...scoreForm, player1_score: e.target.value })}
-                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -325,26 +451,22 @@ export default function EventDashboard() {
                       min="0"
                       value={scoreForm.player2_score}
                       onChange={(e) => setScoreForm({ ...scoreForm, player2_score: e.target.value })}
-                      required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Winner *</Label>
-                  <Select value={scoreForm.winner_id} onValueChange={(v) => setScoreForm({ ...scoreForm, winner_id: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select winner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={String(editingMatch.player1_id)}>
-                        {getPlayerName(editingMatch.player1_id)}
-                      </SelectItem>
-                      <SelectItem value={String(editingMatch.player2_id)}>
-                        {getPlayerName(editingMatch.player2_id)}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    value={scoreForm.winner_id}
+                    onValueChange={(v) => setScoreForm({ ...scoreForm, winner_id: v })}
+                    options={[
+                      { value: String(editingMatch.player1_id), label: getPlayerName(editingMatch.player1_id) },
+                      { value: String(editingMatch.player2_id), label: getPlayerName(editingMatch.player2_id) }
+                    ]}
+                    placeholder="Select winner"
+                    searchPlaceholder="Search players..."
+                  />
                 </div>
 
                 {error && (

@@ -130,11 +130,11 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
           className="flex items-center justify-center gap-2 font-semibold cursor-pointer w-full"
         >
           <span className={isP1Winner ? 'text-green-600 dark:text-green-400 text-2xl' : 'text-muted-foreground text-xl'}>
-            {match.player1_score}
+            {match.player1_score ?? '?'}
           </span>
           <span className="text-muted-foreground">-</span>
           <span className={!isP1Winner ? 'text-green-600 dark:text-green-400 text-2xl' : 'text-muted-foreground text-xl'}>
-            {match.player2_score ?? 0}
+            {match.player2_score ?? '?'}
           </span>
         </button>
       ) : (

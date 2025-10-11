@@ -130,7 +130,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                             ? 'hsl(var(--chart-2))' 
                             : 'hsl(var(--muted-foreground))'
                         }}>
-                          {match.player1_score}
+                          {match.player1_score ?? '?'}
                         </div>
                         {match.winner_id === match.player1_id && (
                           <div className="text-sm font-medium text-green-600 dark:text-green-400">Winner</div>
@@ -201,7 +201,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                             ? 'hsl(var(--chart-2))' 
                             : 'hsl(var(--muted-foreground))'
                         }}>
-                          {match.player2_score ?? 0}
+                          {match.player2_score ?? '?'}
                         </div>
                         {match.winner_id === match.player2_id && (
                           <div className="text-sm font-medium text-green-600 dark:text-green-400">Winner</div>

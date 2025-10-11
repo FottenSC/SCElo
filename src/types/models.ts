@@ -52,8 +52,8 @@ export type Match = {
   player1_id: number
   player2_id: number
   winner_id: number | null // null = upcoming match, not null = completed match
-  player1_score: number
-  player2_score?: number
+  player1_score?: number | null
+  player2_score?: number | null
   rating_change_p1?: number
   rating_change_p2?: number
   event_id?: number | null

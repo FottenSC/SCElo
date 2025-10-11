@@ -61,7 +61,7 @@ VALUES (
 
 -- Option B: Grant admin to existing user
 UPDATE auth.users
-SET raw_app_meta_data = raw_app_meta_data || '{"role": "admin"}'::jsonb
+SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'admin')
 WHERE email = 'your-email@example.com';
 ```
 

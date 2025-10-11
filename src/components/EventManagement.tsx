@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Pencil, Trash2, Plus, Calendar } from 'lucide-react'
+import { Pencil, Trash2, Plus, Calendar, RefreshCw } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 interface EventFormData {
   title: string
@@ -19,8 +20,10 @@ interface EventFormData {
 }
 
 export default function EventManagement() {
+  const { toast } = useToast()
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
   const [formData, setFormData] = useState<EventFormData>({
@@ -37,8 +40,14 @@ export default function EventManagement() {
     loadEvents()
   }, [])
 
-  const loadEvents = async () => {
-    setLoading(true)
+  const loadEvents = async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true)
+    } else {
+      setLoading(true)
+    }
+    
+    // Force fresh data by adding a timestamp to bypass cache
     const { data, error } = await supabase
       .from('events')
       .select('*')
@@ -47,10 +56,17 @@ export default function EventManagement() {
     if (error) {
       console.error('Error loading events:', error)
       setError(error.message)
+      toast({
+        variant: 'destructive',
+        title: 'Error loading events',
+        description: error.message
+      })
     } else {
       setEvents(data || [])
     }
+    
     setLoading(false)
+    setRefreshing(false)
   }
 
   const openCreateDialog = () => {
@@ -68,15 +84,11 @@ export default function EventManagement() {
 
   const openEditDialog = (event: Event) => {
     setEditingEvent(event)
-    // Convert ISO timestamp to datetime-local format
-    const eventDate = new Date(event.event_date)
-    const localDate = new Date(eventDate.getTime() - eventDate.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16)
-    
+    // Convert ISO string to local datetime format for the input
+    const localDateTime = new Date(event.event_date).toISOString().slice(0, 16)
     setFormData({
       title: event.title,
-      event_date: localDate,
+      event_date: localDateTime,
       stream_url: event.stream_url || '',
       vod_link: event.vod_link || '',
       description: event.description || ''
@@ -91,6 +103,10 @@ export default function EventManagement() {
     setError(null)
 
     try {
+      if (!formData.event_date) {
+        throw new Error('Event date and time are required.')
+      }
+
       const eventData = {
         title: formData.title,
         event_date: new Date(formData.event_date).toISOString(),
@@ -106,18 +122,35 @@ export default function EventManagement() {
           .eq('id', editingEvent.id)
 
         if (error) throw error
+        
+        toast({
+          variant: 'success',
+          title: 'Event updated',
+          description: `${formData.title} has been updated successfully.`
+        })
       } else {
         const { error } = await supabase
           .from('events')
           .insert(eventData)
 
         if (error) throw error
+        
+        toast({
+          variant: 'success',
+          title: 'Event created',
+          description: `${formData.title} has been created successfully.`
+        })
       }
 
       setDialogOpen(false)
-      loadEvents()
+      loadEvents(true)
     } catch (err: any) {
       setError(err.message)
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: err.message
+      })
     } finally {
       setSubmitting(false)
     }
@@ -134,9 +167,18 @@ export default function EventManagement() {
       .eq('id', event.id)
 
     if (error) {
-      alert(`Error deleting event: ${error.message}`)
+      toast({
+        variant: 'destructive',
+        title: 'Error deleting event',
+        description: error.message
+      })
     } else {
-      loadEvents()
+      toast({
+        variant: 'success',
+        title: 'Event deleted',
+        description: `${event.title} has been deleted.`
+      })
+      loadEvents(true)
     }
   }
 
@@ -158,10 +200,20 @@ export default function EventManagement() {
             <CardTitle>Event Management</CardTitle>
             <CardDescription>Create, edit, and delete events</CardDescription>
           </div>
-          <Button onClick={openCreateDialog}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Event
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => loadEvents(true)} 
+              variant="outline" 
+              size="icon"
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button onClick={openCreateDialog}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Event
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -243,11 +295,13 @@ export default function EventManagement() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="event_date">Date & Time *</Label>
-                <Input
+                <input
                   id="event_date"
                   type="datetime-local"
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [color-scheme:light] dark:[color-scheme:dark]"
                   value={formData.event_date}
                   onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
+                  min={new Date().toISOString().slice(0, 16)}
                   required
                 />
               </div>

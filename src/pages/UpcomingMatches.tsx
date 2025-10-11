@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { fetchPlayers, fetchUpcomingEvents, fetchUpcomingMatches } from '@/lib/data'
@@ -150,7 +151,11 @@ export function UpcomingMatches() {
                             <AvatarFallback>{getPlayerInitials(player1.name)}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-semibold">{player1.name}</div>
+                            <div className="font-semibold">
+                              <Link to={`/players/${player1.id}`} className="hover:underline text-primary">
+                                {player1.name}
+                              </Link>
+                            </div>
                             <div className="text-sm text-muted-foreground">
                               Rating: {Math.round(player1.rating)}
                             </div>
@@ -191,7 +196,11 @@ export function UpcomingMatches() {
                             <AvatarFallback>{getPlayerInitials(player2.name)}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-semibold">{player2.name}</div>
+                            <div className="font-semibold">
+                              <Link to={`/players/${player2.id}`} className="hover:underline text-primary">
+                                {player2.name}
+                              </Link>
+                            </div>
                             <div className="text-sm text-muted-foreground">
                               Rating: {Math.round(player2.rating)}
                             </div>

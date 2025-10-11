@@ -125,8 +125,7 @@ export default function Admin() {
               </p>
               <pre className="bg-muted p-3 rounded mt-2 text-xs overflow-x-auto">
 {`UPDATE auth.users
-SET raw_app_meta_data = 
-  raw_app_meta_data || '{"role": "admin"}'::jsonb
+SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'admin')
 WHERE id = '${session.user.id}';`}
               </pre>
               <p className="text-sm text-muted-foreground mt-2">

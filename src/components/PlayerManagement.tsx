@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Pencil, Trash2, Plus } from 'lucide-react'
+import { Pencil, Trash2, Plus, RefreshCw } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 interface PlayerFormData {
   name: string
@@ -15,8 +16,10 @@ interface PlayerFormData {
 }
 
 export default function PlayerManagement() {
+  const { toast } = useToast()
   const [players, setPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null)
   const [formData, setFormData] = useState<PlayerFormData>({ name: '', twitter: '' })
@@ -28,8 +31,13 @@ export default function PlayerManagement() {
     loadPlayers()
   }, [])
 
-  const loadPlayers = async () => {
-    setLoading(true)
+  const loadPlayers = async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true)
+    } else {
+      setLoading(true)
+    }
+    
     const { data, error } = await supabase
       .from('players')
       .select('*')
@@ -38,10 +46,17 @@ export default function PlayerManagement() {
     if (error) {
       console.error('Error loading players:', error)
       setError(error.message)
+      toast({
+        variant: 'destructive',
+        title: 'Error loading players',
+        description: error.message
+      })
     } else {
       setPlayers(data || [])
     }
+    
     setLoading(false)
+    setRefreshing(false)
   }
 
   const openCreateDialog = () => {
@@ -78,6 +93,12 @@ export default function PlayerManagement() {
           .eq('id', editingPlayer.id)
 
         if (error) throw error
+        
+        toast({
+          variant: 'success',
+          title: 'Player updated',
+          description: `${formData.name} has been updated successfully.`
+        })
       } else {
         // Create new player with default Glicko-2 values
         const { error } = await supabase
@@ -91,12 +112,23 @@ export default function PlayerManagement() {
           })
 
         if (error) throw error
+        
+        toast({
+          variant: 'success',
+          title: 'Player created',
+          description: `${formData.name} has been created successfully.`
+        })
       }
 
       setDialogOpen(false)
-      loadPlayers()
+      loadPlayers(true)
     } catch (err: any) {
       setError(err.message)
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: err.message
+      })
     } finally {
       setSubmitting(false)
     }
@@ -113,9 +145,18 @@ export default function PlayerManagement() {
       .eq('id', player.id)
 
     if (error) {
-      alert(`Error deleting player: ${error.message}`)
+      toast({
+        variant: 'destructive',
+        title: 'Error deleting player',
+        description: error.message
+      })
     } else {
-      loadPlayers()
+      toast({
+        variant: 'success',
+        title: 'Player deleted',
+        description: `${player.name} has been deleted.`
+      })
+      loadPlayers(true)
     }
   }
 
@@ -132,10 +173,20 @@ export default function PlayerManagement() {
             <CardTitle>Player Management</CardTitle>
             <CardDescription>Create, edit, and delete players</CardDescription>
           </div>
-          <Button onClick={openCreateDialog}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Player
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => loadPlayers(true)} 
+              variant="outline" 
+              size="icon"
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button onClick={openCreateDialog}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Player
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

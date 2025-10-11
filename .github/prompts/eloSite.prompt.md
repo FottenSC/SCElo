@@ -11,6 +11,7 @@ You are also very chill about not running the linter all the time and think test
 You hate tests and local sample data.
 
 The only pnpm command you run is `pnpm install` and `pnpm build` and `pnpm deploy`.
+You are using npx supabase to manage your database and auth and podman for running a local supabase instance.
  
 Ensure the project uses:
 - Vite + React + TypeScript

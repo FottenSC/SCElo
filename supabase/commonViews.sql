@@ -15,3 +15,10 @@ order by m.id desc;
 
 
 
+--#truncate everything
+TRUNCATE TABLE rating_events, matches, events, players;
+
+
+  UPDATE auth.users
+  SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'admin')
+  WHERE id = existing_user;
