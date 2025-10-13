@@ -177,6 +177,14 @@ export default function MatchManagement() {
       }
 
       const hasResult = matchData.winner_id !== null
+      
+      // Check if this is changing an existing result (requires recalc)
+      const wasCompleted = editingMatch?.winner_id !== null
+      const resultChanged = editingMatch && wasCompleted && hasResult && (
+        editingMatch.winner_id !== matchData.winner_id ||
+        editingMatch.player1_score !== matchData.player1_score ||
+        editingMatch.player2_score !== matchData.player2_score
+      )
 
       if (editingMatch) {
         const { error } = await supabase
@@ -188,7 +196,7 @@ export default function MatchManagement() {
         
         toast({
           title: 'Match updated',
-          description: hasResult ? 'Match updated. Recalculating ratings...' : 'Match has been updated successfully.'
+          description: resultChanged ? 'Match updated. Recalculating ratings...' : 'Match has been updated successfully.'
         })
       } else {
         const { error } = await supabase
@@ -199,15 +207,15 @@ export default function MatchManagement() {
         
         toast({
           title: 'Match created',
-          description: hasResult ? 'Match created. Recalculating ratings...' : 'Match has been created successfully.'
+          description: 'Match has been created successfully.'
         })
       }
 
       setDialogOpen(false)
       loadData(true)
 
-      // Only recalculate ratings if match has a result
-      if (hasResult) {
+      // Only recalculate ratings if an existing result was changed (not initially set)
+      if (resultChanged) {
         const ratingResult = await updateRatingsAfterMatch((message) => {
           console.log('Rating update:', message)
         })

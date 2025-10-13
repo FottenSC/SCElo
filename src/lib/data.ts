@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Player, PlayedMatch, Event, Match } from '@/types/models'
 import { supabase } from '@/supabase/client'
-import { getPlayerAvatarUrl, preloadAvatars } from '@/lib/avatar'
 
 export async function fetchPlayers(): Promise<Player[]> {
   try {
@@ -12,17 +11,6 @@ export async function fetchPlayers(): Promise<Player[]> {
     if (error) throw error
     
     const players = (data ?? []) as Player[]
-    
-    // Preload avatar images for top players in the background
-    if (players.length > 0 && typeof window !== 'undefined') {
-      // Preload top 10 players' avatars
-      const topPlayerAvatars = players
-        .slice(0, 10)
-        .map(p => getPlayerAvatarUrl(p.twitter, 48, p.name))
-      
-      // Use setTimeout to avoid blocking the main thread
-      setTimeout(() => preloadAvatars(topPlayerAvatars), 100)
-    }
     
     return players
   } catch (e) {

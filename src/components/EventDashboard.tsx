@@ -149,6 +149,14 @@ export default function EventDashboard() {
         }
       }
 
+      // Check if the match previously had a result (changing existing result requires recalc)
+      const wasCompleted = editingMatch.winner_id !== null
+      const resultChanged = wasCompleted && completing && (
+        editingMatch.winner_id !== winnerId ||
+        editingMatch.player1_score !== p1Score ||
+        editingMatch.player2_score !== p2Score
+      )
+
       const { error } = await supabase
         .from('matches')
         .update({
@@ -168,8 +176,8 @@ export default function EventDashboard() {
       setScoreDialogOpen(false)
       loadMatches(true)
 
-      // Automatically update ratings only if completed
-      if (completing) {
+      // Only recalculate ratings if result was changed (not just initially set)
+      if (resultChanged) {
         const ratingResult = await updateRatingsAfterMatch((message) => {
           console.log('Rating update:', message)
         })
