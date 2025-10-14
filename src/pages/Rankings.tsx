@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useSearchParams } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -19,6 +20,7 @@ function format(num: number, digits = 0) {
 }
 
 export default function Rankings() {
+  useDocumentTitle('Leaderboard')
   const { players, matches, loading, error } = usePlayersAndMatches()
   const [searchParams, setSearchParams] = useSearchParams()
   

@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -15,6 +16,7 @@ type EventWithMatches = Event & {
 }
 
 export function UpcomingMatches() {
+  useDocumentTitle('Upcoming Matches')
   const [players, setPlayers] = useState<Player[]>([])
   const [events, setEvents] = useState<Event[]>([])
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([])

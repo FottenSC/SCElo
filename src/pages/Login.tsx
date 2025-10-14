@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useAuth } from '@/supabase/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -7,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { supabase } from '@/supabase/client'
 
 export default function Login() {
+  useDocumentTitle('Login')
   const { signInWithGithub, signInWithTwitter, signOut, session } = useAuth()
   const [showEmailLogin, setShowEmailLogin] = useState(false)
   const [loginEmail, setLoginEmail] = useState('')

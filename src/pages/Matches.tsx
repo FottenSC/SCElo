@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useSearchParams } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -10,6 +11,7 @@ import type { Event } from '@/types/models'
 const ITEMS_PER_PAGE = 25
 
 export default function Matches() {
+  useDocumentTitle('Matches')
   const { players, matches, loading } = usePlayersAndMatches()
   const [searchParams, setSearchParams] = useSearchParams()
   const [events, setEvents] = React.useState<Event[]>([])

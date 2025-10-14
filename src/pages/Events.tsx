@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { fetchEvents, fetchMatches } from '@/lib/data'
 import { Link } from 'react-router-dom'
@@ -10,6 +11,7 @@ type EventWithMatchCount = Event & {
 }
 
 export default function Events() {
+  useDocumentTitle('Events')
   const [events, setEvents] = useState<Event[]>([])
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)

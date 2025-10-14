@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -41,6 +42,8 @@ export default function Player() {
   }, [])
 
   const player = useMemo(() => players.find((p) => p.id === playerId), [players, playerId])
+  // Set title: show placeholder while loading or player not found
+  useDocumentTitle(player ? `Player - ${player.name}` : 'Player')
 
   // Calculate player rank
   const playerRank = useMemo(() => {

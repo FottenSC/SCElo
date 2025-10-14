@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useParams, Link } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -53,6 +54,7 @@ export default function SingleEvent() {
   }, [players, matches])
 
   if (loading) {
+    useDocumentTitle('Event')
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-4">
@@ -66,6 +68,7 @@ export default function SingleEvent() {
   }
 
   if (!event) {
+    useDocumentTitle('Event Not Found')
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-4">
@@ -80,6 +83,7 @@ export default function SingleEvent() {
   }
 
   const isPastEvent = new Date(event.event_date) < new Date()
+  useDocumentTitle(`Event - ${event.title}`)
 
   return (
     <div className="space-y-6">

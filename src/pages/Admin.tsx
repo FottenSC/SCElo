@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { recalculateAllRatingsAsEvents, type RecalculationProgress } from '@/lib/ratings-events'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,6 +13,7 @@ import MatchManagement from '@/components/MatchManagement'
 import EventDashboard from '@/components/EventDashboard'
 
 export default function Admin() {
+  useDocumentTitle('Admin')
   const { session, isAdmin, loading } = useAuth()
   const [progress, setProgress] = useState<RecalculationProgress>({
     totalMatches: 0,
