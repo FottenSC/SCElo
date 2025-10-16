@@ -9,7 +9,8 @@ import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
 import { formatRatingChange } from '@/lib/predictions'
 import { useMatchModal } from '@/components/MatchModalContext'
 import { Link as LinkIcon, ArrowUp, ArrowDown, Trophy, TrendingUp } from 'lucide-react'
-import type { Event } from '@/types/models'
+import { supabase } from '@/supabase/client'
+import type { Event, RatingEvent } from '@/types/models'
 
 const ITEMS_PER_PAGE = 20
 
@@ -27,6 +28,8 @@ export default function Player() {
   const currentPage = parseInt(searchParams.get('page') || '1', 10)
   const { openMatch } = useMatchModal()
   const [historyCount, setHistoryCount] = useState<10 | 50 | 'all'>(10)
+  const [lastResetTime, setLastResetTime] = useState<number | null>(null)
+  const [ratingEvents, setRatingEvents] = useState<RatingEvent[]>([])
   
   const { players, matches, loading } = usePlayersAndMatches()
   const [events, setEvents] = useState<Event[]>([])
@@ -40,6 +43,33 @@ export default function Player() {
     })()
     return () => { active = false }
   }, [])
+
+  // Fetch the last reset time for this player
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      // Fetch all rating events for this player
+      const { data: events, error } = await supabase
+        .from('rating_events')
+        .select('*')
+        .eq('player_id', playerId)
+        .order('created_at', { ascending: true })
+      
+      if (!active) return
+      if (!error && events) {
+        setRatingEvents(events)
+        
+        // Find the last reset event
+        const resetEvent = [...events].reverse().find(e => e.event_type === 'reset')
+        if (resetEvent && resetEvent.created_at) {
+          const resetTimestamp = new Date(resetEvent.created_at).getTime()
+          setLastResetTime(resetTimestamp)
+          console.log(`🔄 Found rating reset at ${new Date(resetTimestamp).toLocaleString()}`)
+        }
+      }
+    })()
+    return () => { active = false }
+  }, [playerId])
 
   const player = useMemo(() => players.find((p) => p.id === playerId), [players, playerId])
   // Set title: show placeholder while loading or player not found
@@ -84,20 +114,126 @@ export default function Player() {
   const ratingHistory = useMemo(() => {
     if (!player) return []
     
-    // Determine how many matches to show
-    const count = historyCount === 'all' ? myMatches.length : historyCount
+    // If we have rating events, use those directly
+    if (ratingEvents.length > 0) {
+      // Find the last reset event if it exists
+      const resetEvent = ratingEvents.find(e => e.event_type === 'reset')
+      
+      // Filter to match events only and build in order
+      let matchEvents: any[] = []
+      let resetIndex = -1
+      
+      if (resetEvent) {
+        // Find where the reset is in the events
+        resetIndex = ratingEvents.findIndex(e => e.event_type === 'reset' && e.created_at === resetEvent.created_at)
+        
+        // Get all match events and track their position relative to reset
+        ratingEvents.forEach((event, index) => {
+          if (event.event_type === 'match') {
+            // Get opponent name from players array
+            let opponentName = 'Unknown'
+            if (event.opponent_id) {
+              const opponent = players.find(p => p.id === event.opponent_id)
+              opponentName = opponent?.name || `Player ${event.opponent_id}`
+            }
+            
+            matchEvents.push({
+              matchNum: 0,
+              rating: event.rating,
+              change: event.rating_change || 0,
+              won: event.result === 1,
+              matchId: event.match_id || 0,
+              opponentName,
+              eventTitle: null,
+              isReset: false,
+              wasBeforeReset: index < resetIndex,
+            })
+          }
+        })
+        
+        // Apply history count filter - but now we want to show matches around the reset
+        const count = historyCount === 'all' ? matchEvents.length : historyCount
+        
+        // Find matches around the reset point
+        const afterReset = matchEvents.filter(m => !m.wasBeforeReset)
+        const beforeReset = matchEvents.filter(m => m.wasBeforeReset)
+        
+        // Show recent matches and keep the reset visible on right
+        if (afterReset.length > 0) {
+          // If there are matches after reset, show the most recent ones
+          const recentAfter = afterReset.slice(-count)
+          matchEvents = recentAfter
+        } else {
+          // If no matches after reset, show the most recent before
+          matchEvents = beforeReset.slice(-count)
+        }
+        
+        // Insert reset point after all the shown matches
+        matchEvents = [
+          ...matchEvents,
+          {
+            matchNum: matchEvents.length,
+            rating: 1500,
+            change: 0,
+            won: false,
+            matchId: 0,
+            opponentName: 'Reset',
+            eventTitle: null,
+            isReset: true,
+            wasBeforeReset: false,
+          },
+        ]
+      } else {
+        // No reset - original logic
+        matchEvents = ratingEvents
+          .filter(e => e.event_type === 'match')
+          .map((event) => {
+            // Get opponent name from players array
+            let opponentName = 'Unknown'
+            if (event.opponent_id) {
+              const opponent = players.find(p => p.id === event.opponent_id)
+              opponentName = opponent?.name || `Player ${event.opponent_id}`
+            }
+            
+            return {
+              matchNum: 0,
+              rating: event.rating,
+              change: event.rating_change || 0,
+              won: event.result === 1,
+              matchId: event.match_id || 0,
+              opponentName,
+              eventTitle: null,
+              isReset: false,
+              wasBeforeReset: false,
+            }
+          })
+        
+        const count = historyCount === 'all' ? matchEvents.length : historyCount
+        matchEvents = matchEvents.slice(-count)
+      }
+      
+      // Renumber matches
+      matchEvents = matchEvents.map((m, i) => ({ ...m, matchNum: i }))
+      
+      return matchEvents
+    }
     
-    // Get last N matches in chronological order (oldest to newest)
-    const selectedMatches = [...myMatches].slice(0, count).reverse()
+    // Fallback to original logic if no rating events
+    const count = historyCount === 'all' ? myMatches.length : historyCount
+    let selectedMatches = [...myMatches].slice(0, count).reverse()
     
     if (selectedMatches.length === 0) return []
     
-    // Calculate the starting rating by working backwards from current rating
-    let startingRating = player.rating
-    for (const m of selectedMatches) {
-      if (!m.winner_id) continue
-      const ratingChange = m.player1_id === playerId ? (m.rating_change_p1 || 0) : (m.rating_change_p2 || 0)
-      startingRating -= ratingChange
+    // Calculate the starting rating - use 1500 if there was a reset, otherwise work backwards
+    let startingRating = lastResetTime ? 1500 : player.rating
+    
+    if (!lastResetTime) {
+      // Original logic: work backwards from current rating
+      for (const m of selectedMatches) {
+        if (!m.winner_id) continue
+        const ratingChange = m.player1_id === playerId ? (m.rating_change_p1 || 0) : (m.rating_change_p2 || 0)
+        startingRating -= ratingChange
+      }
     }
     
     // Now build the history forwards with opponent info
@@ -109,6 +245,7 @@ export default function Player() {
       matchId: number
       opponentName: string
       eventTitle: string | null
+      isReset: boolean
     }> = []
     let currentRating = startingRating
     
@@ -130,12 +267,13 @@ export default function Player() {
         won,
         matchId: m.id,
         opponentName: opponent?.name || `Player ${oppId}`,
-        eventTitle: event?.title || null
+        eventTitle: event?.title || null,
+        isReset: false,
       })
     })
     
     return history
-  }, [myMatches, playerId, player, players, events, historyCount])
+  }, [myMatches, playerId, player, players, events, historyCount, lastResetTime, ratingEvents])
   
   // Pagination calculations
   const totalPages = Math.ceil(myMatches.length / ITEMS_PER_PAGE)
@@ -366,36 +504,60 @@ export default function Player() {
                         return (
                           <div key={index} className="flex-1 flex flex-col items-center gap-1 relative group" style={{ minWidth: ratingHistory.length > 50 ? '6px' : 'auto' }}>
                             <div className="relative w-full flex items-end justify-center" style={{ height: '100px' }}>
-                              <button
-                                onClick={() => openMatch(point.matchId)}
-                                className={`w-full rounded-t transition-all cursor-pointer relative ${
-                                  point.won 
-                                    ? 'bg-green-500/30 hover:bg-green-500/50' 
-                                    : 'bg-red-500/30 hover:bg-red-500/50'
-                                }`}
-                                style={{ height: `${Math.max(heightPercent, 5)}%` }}
-                              >
-                                {showRatingNumber && (
-                                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium whitespace-nowrap">
-                                    {format(point.rating, 0)}
-                                  </div>
-                                )}
-                              </button>
+                              {point.isReset ? (
+                                <div
+                                  className="w-full rounded-t transition-all relative bg-yellow-500/20 hover:bg-yellow-500/30 border-2 border-yellow-500/50"
+                                  style={{ height: `${Math.max(heightPercent, 5)}%` }}
+                                >
+                                  {showRatingNumber && (
+                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium whitespace-nowrap">
+                                      {format(point.rating, 0)}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => openMatch(point.matchId)}
+                                  className={`w-full rounded-t transition-all cursor-pointer relative ${
+                                    point.won 
+                                      ? 'bg-green-500/30 hover:bg-green-500/50' 
+                                      : 'bg-red-500/30 hover:bg-red-500/50'
+                                  }`}
+                                  style={{ height: `${Math.max(heightPercent, 5)}%` }}
+                                >
+                                  {showRatingNumber && (
+                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium whitespace-nowrap">
+                                      {format(point.rating, 0)}
+                                    </div>
+                                  )}
+                                </button>
+                              )}
                               
                               {/* Tooltip on hover - adjust position for edges */}
                               <div className={`absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none ${
                                 isNearEnd ? 'right-0' : isNearStart ? 'left-0' : 'left-1/2 -translate-x-1/2'
                               }`}>
                                 <div className="bg-popover text-popover-foreground px-3 py-2 rounded-md shadow-lg border text-xs whitespace-nowrap">
-                                  <div className="font-semibold">{point.won ? '✓ Win' : '✗ Loss'} vs {point.opponentName}</div>
-                                  <div className="text-muted-foreground mt-1">
-                                    Rating: <span className="font-medium text-foreground">{format(point.rating, 0)}</span>
-                                    <span className={point.change >= 0 ? 'text-green-600 dark:text-green-400 ml-1' : 'text-red-600 dark:text-red-400 ml-1'}>
-                                      ({point.change >= 0 ? '+' : ''}{point.change.toFixed(1)})
-                                    </span>
-                                  </div>
-                                  {point.eventTitle && (
-                                    <div className="text-muted-foreground mt-1">Event: {point.eventTitle}</div>
+                                  {point.isReset ? (
+                                    <>
+                                      <div className="font-semibold">🔄 Rating Reset</div>
+                                      <div className="text-muted-foreground mt-1">
+                                        All players reset to <span className="font-medium text-foreground">1500</span>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className="font-semibold">{point.won ? '✓ Win' : '✗ Loss'} vs {point.opponentName}</div>
+                                      <div className="text-muted-foreground mt-1">
+                                        Rating: <span className="font-medium text-foreground">{format(point.rating, 0)}</span>
+                                        <span className={point.change >= 0 ? 'text-green-600 dark:text-green-400 ml-1' : 'text-red-600 dark:text-red-400 ml-1'}>
+                                          ({point.change >= 0 ? '+' : ''}{point.change.toFixed(1)})
+                                        </span>
+                                      </div>
+                                      {point.eventTitle && (
+                                        <div className="text-muted-foreground mt-1">Event: {point.eventTitle}</div>
+                                      )}
+                                    </>
                                   )}
                                 </div>
                               </div>
@@ -410,14 +572,22 @@ export default function Player() {
                   </div>
                   
                   {/* Legend */}
-                  <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2 border-t">
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded bg-green-500/30"></div>
-                      <span>Win</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded bg-red-500/30"></div>
-                      <span>Loss</span>
+                  <div className="flex flex-col gap-2 text-xs text-muted-foreground pt-2 border-t">
+                    <div className="flex items-center justify-center gap-4">
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 rounded bg-green-500/30"></div>
+                        <span>Win</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 rounded bg-red-500/30"></div>
+                        <span>Loss</span>
+                      </div>
+                      {lastResetTime && (
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 rounded bg-yellow-500/20 border border-yellow-500/50"></div>
+                          <span>Reset</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

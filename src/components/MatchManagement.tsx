@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Pencil, Trash2, Plus, RefreshCw, Undo2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { updateRatingsAfterMatch, canRollbackMatch, rollbackMatch } from '@/lib/ratings-events'
+import { updateRatingsAfterMatch, canRollbackMatch, rollbackMatch, updateRatingForMatch } from '@/lib/ratings-events'
 
 interface MatchFormData {
   player1_id: string
@@ -178,13 +178,18 @@ export default function MatchManagement() {
 
       const hasResult = matchData.winner_id !== null
       
-      // Check if this is changing an existing result (requires recalc)
+      // Check if we need to recalculate ratings:
+      // 1. Creating a new match with a result
+      // 2. Changing an existing result
       const wasCompleted = editingMatch?.winner_id !== null
       const resultChanged = editingMatch && wasCompleted && hasResult && (
         editingMatch.winner_id !== matchData.winner_id ||
         editingMatch.player1_score !== matchData.player1_score ||
         editingMatch.player2_score !== matchData.player2_score
       )
+      const newMatchWithResult = !editingMatch && hasResult
+      
+      let matchIdToUpdate: number | null = null
 
       if (editingMatch) {
         const { error } = await supabase
@@ -196,27 +201,38 @@ export default function MatchManagement() {
         
         toast({
           title: 'Match updated',
-          description: resultChanged ? 'Match updated. Recalculating ratings...' : 'Match has been updated successfully.'
+          description: resultChanged ? 'Match updated. Calculating ratings...' : 'Match has been updated successfully.'
         })
+        
+        if (resultChanged) {
+          matchIdToUpdate = editingMatch.id
+        }
       } else {
-        const { error } = await supabase
+        const { data: insertedMatch, error } = await supabase
           .from('matches')
           .insert(matchData)
+          .select()
 
         if (error) throw error
         
         toast({
           title: 'Match created',
-          description: 'Match has been created successfully.'
+          description: newMatchWithResult ? 'Match created. Calculating ratings...' : 'Match has been created successfully.'
         })
+        
+        // If new match has result, track the ID for rating calculation
+        if (newMatchWithResult && insertedMatch && insertedMatch[0]) {
+          matchIdToUpdate = insertedMatch[0].id
+        }
       }
 
       setDialogOpen(false)
       loadData(true)
 
-      // Only recalculate ratings if an existing result was changed (not initially set)
-      if (resultChanged) {
-        const ratingResult = await updateRatingsAfterMatch((message) => {
+      // Recalculate ratings if we have a match to update
+      // Uses efficient single-match update instead of full recalculation
+      if (matchIdToUpdate) {
+        const ratingResult = await updateRatingForMatch(matchIdToUpdate, (message) => {
           console.log('Rating update:', message)
         })
 
@@ -224,13 +240,15 @@ export default function MatchManagement() {
           toast({
             variant: 'success',
             title: 'Ratings updated',
-            description: 'Player ratings have been recalculated.'
+            description: 'Player ratings have been calculated.'
           })
+          // Reload data to reflect the new ratings
+          await loadData(true)
         } else {
           toast({
             variant: 'destructive',
             title: 'Rating update failed',
-            description: ratingResult.error || 'Failed to update ratings. Please recalculate manually from Admin page.'
+            description: ratingResult.error || 'Failed to update ratings.'
           })
         }
       }

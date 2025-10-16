@@ -9,7 +9,7 @@ import { Combobox } from '@/components/ui/combobox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Trophy, Clock, CheckCircle2, RefreshCw, Undo2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { updateRatingsAfterMatch, canRollbackMatch, rollbackMatch } from '@/lib/ratings-events'
+import { updateRatingForMatch, canRollbackMatch, rollbackMatch } from '@/lib/ratings-events'
 
 interface ScoreFormData {
   player1_score: string
@@ -170,15 +170,15 @@ export default function EventDashboard() {
 
       toast({
         title: 'Score updated',
-        description: completing ? 'Match updated. Recalculating ratings...' : 'Match kept as upcoming.'
+        description: completing ? 'Match updated. Calculating ratings...' : 'Match kept as upcoming.'
       })
       
       setScoreDialogOpen(false)
       loadMatches(true)
 
-      // Only recalculate ratings if result was changed (not just initially set)
-      if (resultChanged) {
-        const ratingResult = await updateRatingsAfterMatch((message) => {
+      // Only recalculate ratings if result was changed or newly set
+      if (resultChanged || (completing && !wasCompleted)) {
+        const ratingResult = await updateRatingForMatch(editingMatch.id, (message: string) => {
           console.log('Rating update:', message)
         })
 
@@ -186,13 +186,15 @@ export default function EventDashboard() {
           toast({
             variant: 'success',
             title: 'Ratings updated',
-            description: 'Player ratings have been recalculated.'
+            description: 'Player ratings have been calculated.'
           })
+          // Reload matches to reflect new ratings
+          await loadMatches(true)
         } else {
           toast({
             variant: 'destructive',
             title: 'Rating update failed',
-            description: ratingResult.error || 'Failed to update ratings. Please recalculate manually from Admin page.'
+            description: ratingResult.error || 'Failed to update ratings.'
           })
         }
       }

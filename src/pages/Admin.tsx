@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
-import { recalculateAllRatingsAsEvents, type RecalculationProgress } from '@/lib/ratings-events'
+import { recalculateAllRatingsAsEvents, resetAllPlayerRatings, type RecalculationProgress } from '@/lib/ratings-events'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -11,6 +11,7 @@ import PlayerManagement from '@/components/PlayerManagement'
 import EventManagement from '@/components/EventManagement'
 import MatchManagement from '@/components/MatchManagement'
 import EventDashboard from '@/components/EventDashboard'
+import { AlertCircle } from 'lucide-react'
 
 export default function Admin() {
   useDocumentTitle('Admin')
@@ -23,6 +24,8 @@ export default function Admin() {
   })
   const [result, setResult] = useState<{ success: boolean; error?: string; eventsCreated: number } | null>(null)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [resetResult, setResetResult] = useState<{ success: boolean; error?: string; playersReset: number } | null>(null)
+  const [resetting, setResetting] = useState(false)
 
   const handleTestPermissions = async () => {
     setTestResult(null)
@@ -85,6 +88,22 @@ export default function Admin() {
     })
 
     setResult(result)
+  }
+
+  const handleResetRatings = async () => {
+    if (!confirm('⚠️ This will reset ALL player ratings to default values (1500, RD 350, Vol 0.06).\n\nThis action is irreversible and will affect all players. Continue?')) {
+      return
+    }
+
+    setResetting(true)
+    setResetResult(null)
+
+    const result = await resetAllPlayerRatings((message) => {
+      console.log('Reset progress:', message)
+    })
+
+    setResetResult(result)
+    setResetting(false)
   }
 
   const getProgressPercentage = () => {
@@ -275,6 +294,56 @@ WHERE id = '${session.user.id}';`}
                 and enables features like decay or manual adjustments.
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Rating Reset Card */}
+        <Card className="border-orange-500/50 bg-orange-500/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-orange-500" />
+              Reset All Player Ratings
+            </CardTitle>
+            <CardDescription>
+              Reset all player ratings to default values. This is useful for season resets or fresh starts.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+              <p className="text-sm text-orange-600 dark:text-orange-400 font-semibold">⚠️ Warning</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                This will set all players' ratings to <strong>1500</strong>, RD to <strong>350</strong>, and volatility to <strong>0.06</strong>.
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                The reset event will be recorded in the rating history and visible in player profiles.
+              </p>
+            </div>
+
+            <Button 
+              onClick={handleResetRatings}
+              disabled={resetting}
+              variant="destructive"
+              size="lg"
+              className="w-full"
+            >
+              {resetting ? 'Resetting Ratings...' : 'Reset All Player Ratings'}
+            </Button>
+
+            {resetResult && !resetResult.success && (
+              <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
+                <p className="text-destructive font-semibold">Error</p>
+                <p className="text-sm text-muted-foreground">{resetResult.error}</p>
+              </div>
+            )}
+
+            {resetResult && resetResult.success && (
+              <div className="p-4 bg-green-500/10 border border-green-500 rounded-lg">
+                <p className="text-green-600 dark:text-green-400 font-semibold">✅ Success!</p>
+                <p className="text-sm text-muted-foreground">
+                  Reset ratings for {resetResult.playersReset} players. The reset has been recorded in player rating history.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
           </TabsContent>

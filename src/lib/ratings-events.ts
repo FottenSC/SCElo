@@ -10,7 +10,8 @@
  */
 
 import { supabase } from '@/supabase/client'
-import type { RatingEvent } from '@/types/models'
+import type { RatingEvent, Match, Player } from '@/types/models'
+import { update as updateGlicko, type Rating } from '@/lib/glicko2'
 
 export interface RecalculationProgress {
   totalMatches: number
@@ -350,14 +351,18 @@ export async function getPlayerPeakRatingFromEvents(playerId: number) {
 
 /**
  * Automatically update ratings when a match result changes
- * This triggers a full recalculation to maintain consistency
+ * Uses full recalculation to maintain consistency with event-sourced architecture
  * 
  * Important: This function:
  * 1. Deletes ALL existing rating events (resets to clean state)
  * 2. Fetches fresh match data from database
  * 3. Recalculates all ratings from scratch
  * 
- * This prevents duplicate processing and ensures consistency
+ * This ensures consistency because Glicko-2 ratings are sequential:
+ * changing one match can theoretically affect all subsequent matches.
+ * 
+ * TODO: Implement incremental updates for better performance.
+ * This would only recalculate ratings for the changed match and all later matches.
  */
 export async function updateRatingsAfterMatch(
   onProgress?: (message: string) => void
@@ -623,3 +628,228 @@ async function computeMatchEventsWithWorker(
     worker.postMessage({ players, matches })
   })
 }
+
+/**
+ * Reset all player ratings to default values
+ * Sets rating to 1500, RD to 350, volatility to 0.06 for all players
+ * This is useful for season resets or fresh starts
+ */
+export async function resetAllPlayerRatings(
+  onProgress?: (message: string) => void
+): Promise<{ success: boolean; error?: string; playersReset: number }> {
+  try {
+    onProgress?.('Fetching all players...')
+    
+    // Get all players
+    const { data: players, error: playersError } = await supabase
+      .from('players')
+      .select('id')
+    
+    if (playersError || !players) {
+      throw new Error(`Failed to fetch players: ${playersError?.message}`)
+    }
+    
+    console.log(`🔄 Starting rating reset for ${players.length} players`)
+    onProgress?.(`Resetting ratings for ${players.length} players...`)
+    
+    // Reset all players
+    const { error: updateError } = await supabase
+      .from('players')
+      .update({
+        rating: 1500,
+        rd: 350,
+        volatility: 0.06
+      })
+      .neq('id', 0) // Update all rows
+    
+    if (updateError) {
+      throw new Error(`Failed to reset player ratings: ${updateError.message}`)
+    }
+    
+    console.log(`✅ Reset ratings for ${players.length} players`)
+    
+    onProgress?.('Creating reset event entries...')
+    
+    // Create reset events for audit trail
+    const resetEvents: Omit<RatingEvent, 'id' | 'created_at'>[] = players.map(player => ({
+      player_id: player.id,
+      match_id: null,
+      event_type: 'reset' as const,
+      rating: 1500,
+      rd: 350,
+      volatility: 0.06,
+      rating_change: null,
+      opponent_id: null,
+      result: null,
+      reason: 'Season/Tournament Reset'
+    }))
+    
+    // Insert reset events in batches
+    const batchSize = 100
+    for (let i = 0; i < resetEvents.length; i += batchSize) {
+      const batch = resetEvents.slice(i, i + batchSize)
+      const { error: insertError } = await supabase
+        .from('rating_events')
+        .insert(batch)
+      
+      if (insertError) {
+        console.warn(`Failed to insert reset events batch ${i / batchSize + 1}:`, insertError)
+        // Don't fail the entire operation if events fail to insert
+      }
+    }
+    
+    console.log(`✅ Created reset events`)
+    onProgress?.('Rating reset complete!')
+    
+    return { 
+      success: true, 
+      playersReset: players.length 
+    }
+  } catch (error) {
+    console.error('Failed to reset player ratings:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      playersReset: 0
+    }
+  }
+}
+
+
+export async function updateRatingForMatch(
+  matchId: number,
+  onProgress?: (message: string) => void
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    onProgress?.('Fetching match details...')
+    console.log(`🔄 Starting rating update for match ${matchId}`)
+    
+    // Get the match
+    const { data: match, error: matchError } = await supabase
+      .from('matches')
+      .select('*')
+      .eq('id', matchId)
+      .single()
+    
+    if (matchError || !match) {
+      throw new Error(`Match not found: ${matchError?.message}`)
+    }
+    
+    if (!match.winner_id) {
+      throw new Error('Match has no result yet')
+    }
+    
+    console.log(`📋 Match ${matchId}: Player ${match.player1_id} vs ${match.player2_id}, Winner: ${match.winner_id}`)
+    
+    onProgress?.('Fetching player ratings...')
+    
+    // Get both players' current rating state
+    const { data: players, error: playersError } = await supabase
+      .from('players')
+      .select('id, rating, rd, volatility')
+      .in('id', [match.player1_id, match.player2_id])
+    
+    if (playersError || !players || players.length !== 2) {
+      throw new Error('Could not fetch player ratings')
+    }
+    
+    const p1 = players.find(p => p.id === match.player1_id)
+    const p2 = players.find(p => p.id === match.player2_id)
+    
+    if (!p1 || !p2) {
+      throw new Error('One or both players not found')
+    }
+    
+    console.log(`👤 P1 (ID: ${p1.id}): Rating ${p1.rating.toFixed(0)}, RD ${p1.rd.toFixed(0)}, Vol ${p1.volatility.toFixed(4)}`)
+    console.log(`👤 P2 (ID: ${p2.id}): Rating ${p2.rating.toFixed(0)}, RD ${p2.rd.toFixed(0)}, Vol ${p2.volatility.toFixed(4)}`)
+    
+    onProgress?.('Calculating new ratings...')
+    
+    // Convert to Glicko-2 format
+    const p1Rating: Rating = {
+      rating: p1.rating,
+      rd: p1.rd,
+      vol: p1.volatility
+    }
+    
+    const p2Rating: Rating = {
+      rating: p2.rating,
+      rd: p2.rd,
+      vol: p2.volatility
+    }
+    
+    // Determine scores
+    const p1Score = match.winner_id === match.player1_id ? 1 : 0
+    const p2Score = match.winner_id === match.player2_id ? 1 : 0
+    
+    console.log(`🎮 Scores: P1=${p1Score}, P2=${p2Score}`)
+    
+    // Calculate new ratings
+    const newP1Rating = updateGlicko(p1Rating, [{ opponent: p2Rating, score: p1Score as 0 | 1 }])
+    const newP2Rating = updateGlicko(p2Rating, [{ opponent: p1Rating, score: p2Score as 0 | 1 }])
+    
+    // Calculate rating changes
+    const ratingChangeP1 = newP1Rating.rating - p1Rating.rating
+    const ratingChangeP2 = newP2Rating.rating - p2Rating.rating
+    
+    console.log(`📊 New ratings calculated:`)
+    console.log(`   P1: ${p1.rating.toFixed(0)} → ${newP1Rating.rating.toFixed(0)} (${ratingChangeP1 >= 0 ? '+' : ''}${ratingChangeP1.toFixed(1)})`)
+    console.log(`   P2: ${p2.rating.toFixed(0)} → ${newP2Rating.rating.toFixed(0)} (${ratingChangeP2 >= 0 ? '+' : ''}${ratingChangeP2.toFixed(1)})`)
+    
+    onProgress?.('Updating database...')
+    
+    // Update the match record with rating changes
+    const { error: matchUpdateError } = await supabase
+      .from('matches')
+      .update({
+        rating_change_p1: ratingChangeP1,
+        rating_change_p2: ratingChangeP2
+      })
+      .eq('id', matchId)
+    
+    if (matchUpdateError) {
+      throw new Error(`Failed to update match: ${matchUpdateError.message}`)
+    }
+    
+    console.log(`✅ Match record updated with rating changes`)
+    
+    // Update both players' ratings
+    const { error: p1UpdateError } = await supabase
+      .from('players')
+      .update({
+        rating: newP1Rating.rating,
+        rd: newP1Rating.rd,
+        volatility: newP1Rating.vol
+      })
+      .eq('id', match.player1_id)
+    
+    if (p1UpdateError) {
+      throw new Error(`Failed to update player 1: ${p1UpdateError.message}`)
+    }
+    
+    console.log(`✅ Player 1 updated`)
+    
+    const { error: p2UpdateError } = await supabase
+      .from('players')
+      .update({
+        rating: newP2Rating.rating,
+        rd: newP2Rating.rd,
+        volatility: newP2Rating.vol
+      })
+      .eq('id', match.player2_id)
+    
+    if (p2UpdateError) {
+      throw new Error(`Failed to update player 2: ${p2UpdateError.message}`)
+    }
+    onProgress?.('Rating updated successfully')
+
+    return { success: true }
+  } catch (error) {
+    console.error('❌ Failed to update rating for match:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error)
+    }
+  }
+}
+
