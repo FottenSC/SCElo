@@ -1,7 +1,7 @@
 -- Season System Implementation
 -- 
 -- Overview:
--- - Active season has id = -1 (fixed ID, never changes)
+-- - Active season has id = 0 (fixed ID, never changes)
 -- - Archived seasons get permanent IDs (1, 2, 3, etc.)
 -- - Players show as inactive when rating IS NULL
 -- - All matches/events reference a season_id
@@ -17,30 +17,30 @@ CREATE TABLE public.seasons (
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Create the active season (id = -1) FIRST before adding foreign keys
+-- Create the active season (id = 0) FIRST before adding foreign keys
 INSERT INTO public.seasons (id, name, status, start_date, description)
-VALUES (-1, 'Active Season', 'active', NOW(), 'Current active season - use id=-1 to reference this');
+VALUES (0, 'Active Season', 'active', NOW(), 'Current active season');
 
 -- Indexes for quick lookups
 CREATE INDEX idx_seasons_status ON public.seasons(status);
 CREATE INDEX idx_seasons_start_date ON public.seasons(start_date);
 
--- 2. Add season_id to matches table (default -1 for active season)
+-- 2. Add season_id to matches table (default 0 for active season)
 ALTER TABLE public.matches
-ADD COLUMN season_id BIGINT NOT NULL DEFAULT -1;
+ADD COLUMN season_id BIGINT NOT NULL DEFAULT 0;
 
--- Add foreign key constraint (now safe since -1 season exists)
+-- Add foreign key constraint (now safe since 0 season exists)
 ALTER TABLE public.matches
 ADD CONSTRAINT fk_matches_season FOREIGN KEY (season_id) REFERENCES public.seasons(id);
 
 -- Index for season filtering
 CREATE INDEX idx_matches_season_id ON public.matches(season_id);
 
--- 3. Add season_id to rating_events table (default -1 for active season)
+-- 3. Add season_id to rating_events table (default 0 for active season)
 ALTER TABLE public.rating_events
-ADD COLUMN season_id BIGINT NOT NULL DEFAULT -1;
+ADD COLUMN season_id BIGINT NOT NULL DEFAULT 0;
 
--- Add foreign key constraint (now safe since -1 season exists)
+-- Add foreign key constraint (now safe since 0 season exists)
 ALTER TABLE public.rating_events
 ADD CONSTRAINT fk_rating_events_season FOREIGN KEY (season_id) REFERENCES public.seasons(id);
 

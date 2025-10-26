@@ -76,13 +76,16 @@ BEGIN
   -- Create archived seasons for historical data (IDs 1-${events.length})
 ${events.map((event, idx) => `  INSERT INTO seasons(id, name, status, start_date, description)
   VALUES (${idx + 1}, '${event}', 'archived', NOW(), 'Historical season: ${event}')
-  ON CONFLICT(id) DO NOTHING;`).join('\n')}
+  ON CONFLICT(id) DO UPDATE SET status = 'archived';`).join('\n')}
 
   -- Create new active season (ID 0) - CRITICAL: Ensure it is marked as active (status='active')
   -- This must DELETE and re-INSERT to override any existing record
   DELETE FROM seasons WHERE id = 0;
   INSERT INTO seasons(id, name, status, start_date, description)
   VALUES (0, 'Active Season', 'active', NOW(), 'Current active season');
+  
+  -- Ensure ALL other seasons are archived (not active)
+  UPDATE seasons SET status = 'archived' WHERE id != 0;
 
   -- Insert unique events
   INSERT INTO events(title, event_date)

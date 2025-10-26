@@ -487,25 +487,28 @@ BEGIN
   -- Create archived seasons for historical data (IDs 1-5)
   INSERT INTO seasons(id, name, status, start_date, description)
   VALUES (1, 'Season 1', 'archived', NOW(), 'Historical season: Season 1')
-  ON CONFLICT(id) DO NOTHING;
+  ON CONFLICT(id) DO UPDATE SET status = 'archived';
   INSERT INTO seasons(id, name, status, start_date, description)
   VALUES (2, 'Season 2', 'archived', NOW(), 'Historical season: Season 2')
-  ON CONFLICT(id) DO NOTHING;
+  ON CONFLICT(id) DO UPDATE SET status = 'archived';
   INSERT INTO seasons(id, name, status, start_date, description)
   VALUES (3, 'Season 3', 'archived', NOW(), 'Historical season: Season 3')
-  ON CONFLICT(id) DO NOTHING;
+  ON CONFLICT(id) DO UPDATE SET status = 'archived';
   INSERT INTO seasons(id, name, status, start_date, description)
   VALUES (4, 'Season 4', 'archived', NOW(), 'Historical season: Season 4')
-  ON CONFLICT(id) DO NOTHING;
+  ON CONFLICT(id) DO UPDATE SET status = 'archived';
   INSERT INTO seasons(id, name, status, start_date, description)
   VALUES (5, 'Season 5', 'archived', NOW(), 'Historical season: Season 5')
-  ON CONFLICT(id) DO NOTHING;
+  ON CONFLICT(id) DO UPDATE SET status = 'archived';
 
   -- Create new active season (ID 0) - CRITICAL: Ensure it is marked as active (status='active')
   -- This must DELETE and re-INSERT to override any existing record
   DELETE FROM seasons WHERE id = 0;
   INSERT INTO seasons(id, name, status, start_date, description)
   VALUES (0, 'Active Season', 'active', NOW(), 'Current active season');
+  
+  -- Ensure ALL other seasons are archived (not active)
+  UPDATE seasons SET status = 'archived' WHERE id != 0;
 
   -- Insert unique events
   INSERT INTO events(title, event_date)

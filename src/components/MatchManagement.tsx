@@ -201,7 +201,7 @@ export default function MatchManagement() {
         event_id: formData.event_id && formData.event_id !== 'none' ? parseInt(formData.event_id) : null,
         match_order: formData.match_order ? parseInt(formData.match_order) : 0,
         vod_link: formData.vod_link || null,
-        season_id: selectedSeason ?? -1
+        season_id: selectedSeason ?? 0
       }
 
       const hasResult = matchData.winner_id !== null
@@ -407,7 +407,7 @@ export default function MatchManagement() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-2 flex-wrap">
-          <Select value={selectedSeason?.toString() ?? ''} onValueChange={(val) => setSelectedSeason(val === '-1' ? -1 : parseInt(val, 10))}>
+          <Select value={selectedSeason?.toString() ?? ''} onValueChange={(val) => setSelectedSeason(val === '0' ? 0 : parseInt(val, 10))}>
             <SelectTrigger className="w-full sm:w-64">
               <SelectValue placeholder="Select a season" />
             </SelectTrigger>

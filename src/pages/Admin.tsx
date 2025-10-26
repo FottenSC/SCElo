@@ -353,9 +353,6 @@ WHERE id = '${session.user.id}';`}
                       <p className="text-xs text-muted-foreground">
                         Started: {new Date(activeSeason.start_date).toLocaleDateString()}
                       </p>
-                      {activeSeason.description && (
-                        <p className="text-xs text-muted-foreground mt-1">{activeSeason.description}</p>
-                      )}
                     </div>
                   </div>
                 ) : (

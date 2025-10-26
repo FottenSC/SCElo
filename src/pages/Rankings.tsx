@@ -267,7 +267,7 @@ export default function Rankings() {
                 {/* Show active season */}
                 {seasons.filter(s => s.status === 'active').map(season => (
                   <SelectItem key={season.id} value={season.id.toString()}>
-                    {season.name} (Active)
+                    {season.name}
                   </SelectItem>
                 ))}
                 {/* Then show archived seasons from oldest to newest */}
