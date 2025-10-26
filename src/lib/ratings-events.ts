@@ -77,37 +77,17 @@ export async function recalculateAllRatingsAsEvents(
     console.log('🎮 Step 2: Fetching matches...')
     const { data: matches, error: matchesError } = await supabase
       .from('matches')
-      .select('id, player1_id, player2_id, winner_id')
+      .select('id, player1_id, player2_id, winner_id, season_id')
       .not('winner_id', 'is', null)
       .order('id')
     
     if (matchesError) throw matchesError
     
-    // If no matches exist, just create reset events and return
+    // If no matches exist, just return early
     if (!matches || matches.length === 0) {
-      console.log('⚠️ No completed matches found - creating reset events only')
+      console.log('⚠️ No completed matches found - nothing to recalculate')
       
-      const resetEvents: Omit<RatingEvent, 'id' | 'created_at'>[] = players.map(player => ({
-        player_id: player.id,
-        match_id: null,
-        event_type: 'reset' as const,
-        rating: 1500,
-        rd: 350,
-        volatility: 0.06,
-        rating_change: null,
-        opponent_id: null,
-        result: null,
-        reason: resetReason
-      }))
-      
-      const { error: resetError } = await supabase
-        .from('rating_events')
-        .insert(resetEvents)
-      
-      if (resetError) throw resetError
-      console.log(`✅ Created ${resetEvents.length} reset events`)
-      
-      // Sync player table with reset ratings
+      // Sync player table with fresh data
       const { error: syncError } = await supabase.rpc('sync_player_ratings_from_events')
       
       if (syncError) {
@@ -125,39 +105,17 @@ export async function recalculateAllRatingsAsEvents(
       
       return {
         success: true,
-        eventsCreated: resetEvents.length
+        eventsCreated: 0
       }
     }
     
     console.log(`✅ Fetched ${matches.length} matches`)
     
-    // Step 3: Create reset events for all players
-    console.log('🔄 Step 3: Creating reset events for all players...')
-    const resetEvents: Omit<RatingEvent, 'id' | 'created_at'>[] = players.map(player => ({
-      player_id: player.id,
-      match_id: null,
-      event_type: 'reset' as const,
-      rating: 1500,
-      rd: 350,
-      volatility: 0.06,
-      rating_change: null,
-      opponent_id: null,
-      result: null,
-      reason: resetReason
-    }))
+    // Step 3: Prepare rating computation (worker handles state initialization)
+    console.log('⚙️ Step 3: Preparing rating computation...')
     
-    const { error: resetError } = await supabase
-      .from('rating_events')
-      .insert(resetEvents)
-    
-    if (resetError) throw resetError
-    console.log(`✅ Created ${resetEvents.length} reset events`)
-    
-    // Step 4: Prepare rating computation (worker handles state initialization)
-    console.log('⚙️ Step 4: Preparing rating computation...')
-    
-    // Step 5: Process matches via Web Worker to avoid blocking UI
-    console.log(`🧮 Step 5: Processing ${matches.length} matches in worker...`)
+    // Step 4: Process matches via Web Worker to avoid blocking UI
+    console.log(`🧮 Step 4: Processing ${matches.length} matches in worker...`)
     const matchEventsFromWorker = await computeMatchEventsWithWorker(
       players.map(p => ({ id: p.id })),
       matches.map(match => ({
@@ -179,9 +137,16 @@ export async function recalculateAllRatingsAsEvents(
       }
     )
     
+    // Create a map of match IDs to season IDs
+    const matchSeasonMap = new Map<number, number>()
+    matches.forEach(match => {
+      matchSeasonMap.set(match.id, match.season_id)
+    })
+    
     const matchEvents: Omit<RatingEvent, 'id' | 'created_at'>[] = matchEventsFromWorker.map((event: WorkerMatchEvent) => ({
       ...event,
-      reason: null
+      reason: null,
+      season_id: matchSeasonMap.get(event.match_id) || 0
     }))
     
     console.log(`✅ Worker produced ${matchEvents.length} match events`)
@@ -289,12 +254,11 @@ export async function recalculateAllRatingsAsEvents(
       status: 'complete'
     })
     
-    const totalEvents = resetEvents.length + matchEvents.length
-    console.log(`🎉 Recalculation complete! Created ${totalEvents} events`)
+    console.log(`🎉 Recalculation complete! Created ${matchEvents.length} match events`)
     
     return {
       success: true,
-      eventsCreated: totalEvents
+      eventsCreated: matchEvents.length
     }
     
   } catch (error) {
@@ -633,6 +597,8 @@ async function computeMatchEventsWithWorker(
  * Reset all player ratings to default values
  * Sets rating to 1500, RD to 350, volatility to 0.06 for all players
  * This is useful for season resets or fresh starts
+ * 
+ * Note: Resets are now detected by season_id changes, so reset events are no longer created.
  */
 export async function resetAllPlayerRatings(
   onProgress?: (message: string) => void
@@ -667,38 +633,6 @@ export async function resetAllPlayerRatings(
     }
     
     console.log(`✅ Reset ratings for ${players.length} players`)
-    
-    onProgress?.('Creating reset event entries...')
-    
-    // Create reset events for audit trail
-    const resetEvents: Omit<RatingEvent, 'id' | 'created_at'>[] = players.map(player => ({
-      player_id: player.id,
-      match_id: null,
-      event_type: 'reset' as const,
-      rating: 1500,
-      rd: 350,
-      volatility: 0.06,
-      rating_change: null,
-      opponent_id: null,
-      result: null,
-      reason: 'Season/Tournament Reset'
-    }))
-    
-    // Insert reset events in batches
-    const batchSize = 100
-    for (let i = 0; i < resetEvents.length; i += batchSize) {
-      const batch = resetEvents.slice(i, i + batchSize)
-      const { error: insertError } = await supabase
-        .from('rating_events')
-        .insert(batch)
-      
-      if (insertError) {
-        console.warn(`Failed to insert reset events batch ${i / batchSize + 1}:`, insertError)
-        // Don't fail the entire operation if events fail to insert
-      }
-    }
-    
-    console.log(`✅ Created reset events`)
     onProgress?.('Rating reset complete!')
     
     return { 
@@ -813,13 +747,14 @@ export async function updateRatingForMatch(
     
     console.log(`✅ Match record updated with rating changes`)
     
-    // Update both players' ratings
+    // Update both players' ratings AND set has_played_this_season flag
     const { error: p1UpdateError } = await supabase
       .from('players')
       .update({
         rating: newP1Rating.rating,
         rd: newP1Rating.rd,
-        volatility: newP1Rating.vol
+        volatility: newP1Rating.vol,
+        has_played_this_season: true
       })
       .eq('id', match.player1_id)
     
@@ -834,7 +769,8 @@ export async function updateRatingForMatch(
       .update({
         rating: newP2Rating.rating,
         rd: newP2Rating.rd,
-        volatility: newP2Rating.vol
+        volatility: newP2Rating.vol,
+        has_played_this_season: true
       })
       .eq('id', match.player2_id)
     
@@ -849,6 +785,250 @@ export async function updateRatingForMatch(
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error)
+    }
+  }
+}
+
+/**
+ * Calculate ratings retroactively for an archived season
+ * 
+ * This function:
+ * 1. Fetches all matches for the specified season
+ * 2. Creates rating events from season snapshots (if available) or from 1500/350/0.06
+ * 3. Processes all matches in chronological order
+ * 4. Creates match events with rating changes
+ * 5. Creates final snapshots for that season
+ * 
+ * @param seasonId The archived season ID to recalculate
+ * @param onProgress Optional callback for progress updates
+ */
+export async function calculateSeasonRatings(
+  seasonId: number,
+  onProgress?: (progress: RecalculationProgress) => void
+): Promise<{ success: boolean; error?: string; eventsCreated: number }> {
+  try {
+    console.log(`🎯 Starting rating calculation for season ${seasonId}...`)
+    
+    // Get season info
+    onProgress?.({
+      totalMatches: 0,
+      processedMatches: 0,
+      currentMatch: 0,
+      status: 'running'
+    })
+    
+    const { data: season, error: seasonError } = await supabase
+      .from('seasons')
+      .select('*')
+      .eq('id', seasonId)
+      .single()
+    
+    if (seasonError || !season) {
+      throw new Error(`Season ${seasonId} not found`)
+    }
+    
+    console.log(`📋 Found season: ${season.name}`)
+    
+    // Get all matches for this season
+    console.log(`🎮 Fetching matches for season ${seasonId}...`)
+    const { data: matches, error: matchesError } = await supabase
+      .from('matches')
+      .select('id, player1_id, player2_id, winner_id')
+      .eq('season_id', seasonId)
+      .not('winner_id', 'is', null)
+      .order('id')
+    
+    if (matchesError) throw matchesError
+    
+    if (!matches || matches.length === 0) {
+      console.log('⚠️ No completed matches found for this season')
+      return {
+        success: true,
+        eventsCreated: 0
+      }
+    }
+    
+    console.log(`✅ Found ${matches.length} matches`)
+    
+    // Get all unique players from matches for this season
+    const playerIds = new Set<number>()
+    matches.forEach(match => {
+      playerIds.add(match.player1_id)
+      playerIds.add(match.player2_id)
+      playerIds.add(match.winner_id)
+    })
+    
+    const { data: players, error: playersError } = await supabase
+      .from('players')
+      .select('id')
+      .in('id', Array.from(playerIds))
+    
+    if (playersError) throw playersError
+    if (!players || players.length === 0) {
+      throw new Error('No players found for this season')
+    }
+    
+    console.log(`👥 Processing ${players.length} players`)
+    
+    // Check if rating events already exist for this season
+    const { count: existingCount } = await supabase
+      .from('rating_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('season_id', seasonId)
+      .eq('event_type', 'match')
+    
+    if ((existingCount || 0) > 0) {
+      console.log(`⚠️ Found ${existingCount} existing match events for this season - deleting them...`)
+      const { error: deleteError } = await supabase
+        .from('rating_events')
+        .delete()
+        .eq('season_id', seasonId)
+        .eq('event_type', 'match')
+      
+      if (deleteError) throw deleteError
+      console.log('✅ Deleted existing match events')
+    }
+    
+    // Process matches via Web Worker
+    console.log(`🧮 Processing ${matches.length} matches with worker...`)
+    const matchEventsFromWorker = await computeMatchEventsWithWorker(
+      players.map(p => ({ id: p.id })),
+      matches.map(match => ({
+        id: match.id,
+        player1_id: match.player1_id,
+        player2_id: match.player2_id,
+        winner_id: match.winner_id as number
+      })),
+      matches.length,
+      (progress: WorkerProgressMessage) => {
+        const currentMatch = matches[Math.min(progress.processedMatches, matches.length - 1)]
+        if (!currentMatch) return
+        onProgress?.({
+          totalMatches: matches.length,
+          processedMatches: progress.processedMatches,
+          currentMatch: currentMatch.id,
+          status: 'running'
+        })
+      }
+    )
+    
+    const matchEvents: Omit<RatingEvent, 'id' | 'created_at'>[] = matchEventsFromWorker.map((event: WorkerMatchEvent) => ({
+      ...event,
+      season_id: seasonId,
+      reason: null
+    }))
+    
+    console.log(`✅ Worker produced ${matchEvents.length} match events`)
+    
+    // Insert match events in batches
+    const INSERT_BATCH_SIZE = 50
+    console.log(`💾 Inserting ${matchEvents.length} events in batches...`)
+    for (let i = 0; i < matchEvents.length; i += INSERT_BATCH_SIZE) {
+      const batch = matchEvents.slice(i, i + INSERT_BATCH_SIZE)
+      const batchNum = Math.floor(i / INSERT_BATCH_SIZE) + 1
+      const totalBatches = Math.ceil(matchEvents.length / INSERT_BATCH_SIZE)
+      
+      const { error: insertError } = await supabase
+        .from('rating_events')
+        .insert(batch)
+      
+      if (insertError) throw insertError
+      
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    
+    console.log('✅ All match events inserted')
+    
+    // Create final snapshots for this season
+    console.log('📸 Creating final snapshots...')
+    
+    // Get latest rating for each player in this season
+    const snapshots = []
+    for (const player of players) {
+      const { data: latestEvent } = await supabase
+        .from('rating_events')
+        .select('rating, rd, volatility')
+        .eq('player_id', player.id)
+        .eq('season_id', seasonId)
+        .order('id', { ascending: false })
+        .limit(1)
+        .single()
+      
+      if (latestEvent) {
+        // Count matches for this player
+        const matchCount = matches.filter(m => 
+          (m.player1_id === player.id || m.player2_id === player.id) && m.winner_id
+        ).length
+        
+        snapshots.push({
+          season_id: seasonId,
+          player_id: player.id,
+          final_rating: latestEvent.rating,
+          final_rd: latestEvent.rd,
+          final_volatility: latestEvent.volatility,
+          matches_played_count: matchCount,
+          peak_rating: null,
+          peak_rating_date: null,
+          final_rank: null
+        })
+      }
+    }
+    
+    if (snapshots.length > 0) {
+      // Sort by rating to assign ranks (for display purposes, not stored)
+      snapshots.sort((a, b) => b.final_rating - a.final_rating)
+      // Note: final_rank will be calculated when needed, not stored
+      
+      // Check if snapshots exist and delete them
+      const { count: existingSnapshots } = await supabase
+        .from('season_player_snapshots')
+        .select('*', { count: 'exact', head: true })
+        .eq('season_id', seasonId)
+      
+      if ((existingSnapshots || 0) > 0) {
+        console.log(`⚠️ Deleting ${existingSnapshots} existing snapshots...`)
+        const { error: deleteError } = await supabase
+          .from('season_player_snapshots')
+          .delete()
+          .eq('season_id', seasonId)
+        
+        if (deleteError) throw deleteError
+      }
+      
+      const { error: snapshotError } = await supabase
+        .from('season_player_snapshots')
+        .insert(snapshots)
+      
+      if (snapshotError) throw snapshotError
+      console.log(`✅ Created ${snapshots.length} season snapshots`)
+    }
+    
+    onProgress?.({
+      totalMatches: matches.length,
+      processedMatches: matches.length,
+      currentMatch: 0,
+      status: 'complete'
+    })
+    
+    console.log(`🎉 Season ${seasonId} rating calculation complete! Created ${matchEvents.length} match events`)
+    
+    return {
+      success: true,
+      eventsCreated: matchEvents.length
+    }
+  } catch (error) {
+    console.error('❌ Season rating calculation failed:', error)
+    onProgress?.({
+      totalMatches: 0,
+      processedMatches: 0,
+      currentMatch: 0,
+      status: 'error'
+    })
+    
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      eventsCreated: 0
     }
   }
 }

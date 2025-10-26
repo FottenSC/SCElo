@@ -88,6 +88,15 @@
 				"build"
 			],
 			"group": "build"
+		},
+		{
+			"label": "Vite build",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"build"
+			],
+			"group": "build"
 		}
 	]
 }

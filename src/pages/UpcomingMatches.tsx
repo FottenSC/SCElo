@@ -159,7 +159,7 @@ export function UpcomingMatches() {
                               </Link>
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              Rating: {Math.round(player1.rating)}
+                              Rating: {player1.rating === null ? 'Unrated' : Math.round(player1.rating)}
                             </div>
                           </div>
                         </div>
@@ -204,7 +204,7 @@ export function UpcomingMatches() {
                               </Link>
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              Rating: {Math.round(player2.rating)}
+                              Rating: {player2.rating === null ? 'Unrated' : Math.round(player2.rating)}
                             </div>
                           </div>
                         </div>

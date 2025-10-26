@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/supabase/client'
-import { Event } from '@/types/models'
+import { Event, Season } from '@/types/models'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -8,8 +8,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Pencil, Trash2, Plus, Calendar, RefreshCw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { getAllSeasons } from '@/lib/seasons'
 
 interface EventFormData {
   title: string
@@ -22,6 +24,8 @@ interface EventFormData {
 export default function EventManagement() {
   const { toast } = useToast()
   const [events, setEvents] = useState<Event[]>([])
+  const [seasons, setSeasons] = useState<Season[]>([])
+  const [selectedSeason, setSelectedSeason] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -38,7 +42,17 @@ export default function EventManagement() {
 
   useEffect(() => {
     loadEvents()
+    loadSeasons()
   }, [])
+  
+  const loadSeasons = async () => {
+    const allSeasons = await getAllSeasons()
+    setSeasons(allSeasons)
+    const activeSeason = allSeasons.find(s => s.status === 'active')
+    if (activeSeason) {
+      setSelectedSeason(activeSeason.id)
+    }
+  }
 
   const loadEvents = async (isRefresh = false) => {
     if (isRefresh) {
@@ -217,6 +231,29 @@ export default function EventManagement() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">Season:</label>
+          <Select value={selectedSeason?.toString() ?? ''} onValueChange={(value) => setSelectedSeason(parseInt(value))}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {/* Show active season first */}
+              {seasons.filter(s => s.status === 'active').map(season => (
+                <SelectItem key={season.id} value={season.id.toString()}>
+                  {season.name} (Active)
+                </SelectItem>
+              ))}
+              {/* Then show archived seasons from oldest to newest */}
+              {seasons.filter(s => s.status === 'archived').sort((a, b) => a.id - b.id).map(season => (
+                <SelectItem key={season.id} value={season.id.toString()}>
+                  {season.name} (Archived)
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {loading ? (
           <div className="text-center py-8 text-muted-foreground">Loading...</div>
         ) : (

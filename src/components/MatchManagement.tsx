@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/supabase/client'
-import { Match, Player, Event } from '@/types/models'
+import { Match, Player, Event, Season } from '@/types/models'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -8,9 +8,11 @@ import { Combobox } from '@/components/ui/combobox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Pencil, Trash2, Plus, RefreshCw, Undo2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { updateRatingsAfterMatch, canRollbackMatch, rollbackMatch, updateRatingForMatch } from '@/lib/ratings-events'
+import { getAllSeasons } from '@/lib/seasons'
 
 interface MatchFormData {
   player1_id: string
@@ -28,6 +30,8 @@ export default function MatchManagement() {
   const [matches, setMatches] = useState<Match[]>([])
   const [players, setPlayers] = useState<Player[]>([])
   const [events, setEvents] = useState<Event[]>([])
+  const [seasons, setSeasons] = useState<Season[]>([])
+  const [selectedSeason, setSelectedSeason] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -50,17 +54,33 @@ export default function MatchManagement() {
 
   useEffect(() => {
     loadData()
+    loadSeasons()
   }, [])
+  
+  const loadSeasons = async () => {
+    const allSeasons = await getAllSeasons()
+    setSeasons(allSeasons)
+    const activeSeason = allSeasons.find(s => s.status === 'active')
+    if (activeSeason) {
+      setSelectedSeason(activeSeason.id)
+    }
+  }
 
-  const loadData = async (isRefresh = false) => {
+  const loadData = async (isRefresh = false, seasonId = selectedSeason) => {
     if (isRefresh) {
       setRefreshing(true)
     } else {
       setLoading(true)
     }
     
+    // Build matches query with season filter
+    let matchesQuery = supabase.from('matches').select('*').order('id', { ascending: false }).limit(100)
+    if (seasonId !== null && seasonId !== undefined) {
+      matchesQuery = matchesQuery.eq('season_id', seasonId)
+    }
+    
     const [matchesRes, playersRes, eventsRes] = await Promise.all([
-      supabase.from('matches').select('*').order('id', { ascending: false }).limit(100),
+      matchesQuery,
       supabase.from('players').select('*').order('name'),
       supabase.from('events').select('*').order('event_date', { ascending: false })
     ])
@@ -91,6 +111,13 @@ export default function MatchManagement() {
     setLoading(false)
     setRefreshing(false)
   }
+  
+  // Reload matches when season changes
+  useEffect(() => {
+    if (selectedSeason !== null) {
+      loadData(false, selectedSeason)
+    }
+  }, [selectedSeason])
 
   const getPlayerName = (playerId: number) => {
     return players.find(p => p.id === playerId)?.name || 'Unknown'
@@ -173,7 +200,8 @@ export default function MatchManagement() {
         player2_score: p2Score,
         event_id: formData.event_id && formData.event_id !== 'none' ? parseInt(formData.event_id) : null,
         match_order: formData.match_order ? parseInt(formData.match_order) : 0,
-        vod_link: formData.vod_link || null
+        vod_link: formData.vod_link || null,
+        season_id: selectedSeason ?? -1
       }
 
       const hasResult = matchData.winner_id !== null
@@ -378,7 +406,27 @@ export default function MatchManagement() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Select value={selectedSeason?.toString() ?? ''} onValueChange={(val) => setSelectedSeason(val === '-1' ? -1 : parseInt(val, 10))}>
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="Select a season" />
+            </SelectTrigger>
+            <SelectContent>
+              {/* Show active season first */}
+              {seasons.filter(s => s.status === 'active').map(season => (
+                <SelectItem key={season.id} value={season.id.toString()}>
+                  {season.name} (Active)
+                </SelectItem>
+              ))}
+              {/* Then show archived seasons from oldest to newest */}
+              {seasons.filter(s => s.status === 'archived').sort((a, b) => a.id - b.id).map(season => (
+                <SelectItem key={season.id} value={season.id.toString()}>
+                  {season.name} (Archived)
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
           <Combobox
             value={eventFilter}
             onValueChange={setEventFilter}

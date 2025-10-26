@@ -222,7 +222,7 @@ export default function PlayerManagement() {
                   <TableRow key={player.id}>
                     <TableCell className="font-medium">{player.name}</TableCell>
                     <TableCell>{player.twitter || '-'}</TableCell>
-                    <TableCell>{Math.round(player.rating)}</TableCell>
+                    <TableCell>{Math.round(player.rating ?? 0)}</TableCell>
                     <TableCell>{player.matches_played || 0}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button

@@ -9,6 +9,9 @@ import { usePlayersAndMatches } from '@/lib/data'
 import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
 import { Input } from '@/components/ui/input'
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { getActiveSeason, getAllSeasons, getActiveSeasonLeaderboard, getArchivedSeasonLeaderboard } from '@/lib/seasons'
+import type { Season, SeasonPlayerSnapshot } from '@/types/models'
 
 const ITEMS_PER_PAGE = 25
 
@@ -25,6 +28,42 @@ export default function Rankings() {
   const [searchParams, setSearchParams] = useSearchParams()
   
   type SortKey = 'rating' | 'rd' | 'matches' | 'name'
+  
+  // Season state
+  const [seasons, setSeasons] = useState<Season[]>([])
+  const [selectedSeason, setSelectedSeason] = useState<number | null>(null)
+  const [archivedLeaderboard, setArchivedLeaderboard] = useState<SeasonPlayerSnapshot[]>([])
+  const [seasonLoading, setSeasonLoading] = useState(false)
+  
+  // Load seasons on mount
+  useEffect(() => {
+    ;(async () => {
+      const allSeasons = await getAllSeasons()
+      setSeasons(allSeasons)
+      // Default to active season
+      const activeSeason = allSeasons.find(s => s.status === 'active')
+      if (activeSeason) {
+        setSelectedSeason(activeSeason.id)
+      }
+    })()
+  }, [])
+  
+  // Load archived season leaderboard when season changes
+  useEffect(() => {
+    // Find the active season to know its ID
+    const activeSeason = seasons.find(s => s.status === 'active')
+    const isActiveSeasonSelected = activeSeason && selectedSeason === activeSeason.id
+    
+    // Only load leaderboard data for archived seasons
+    if (!selectedSeason || isActiveSeasonSelected) return
+    
+    ;(async () => {
+      setSeasonLoading(true)
+      const leaderboard = await getArchivedSeasonLeaderboard(selectedSeason)
+      setArchivedLeaderboard(leaderboard)
+      setSeasonLoading(false)
+    })()
+  }, [selectedSeason, seasons])
   
   // Initialize state from URL params
   const [currentPage, setCurrentPage] = useState(() => {
@@ -48,32 +87,90 @@ export default function Rankings() {
     if (search) params.set('search', search)
     if (sortBy !== 'rating') params.set('sort', sortBy)
     if (sortDir !== 'desc') params.set('dir', sortDir)
-    setSearchParams(params, { replace: true })
-  }, [currentPage, search, sortBy, sortDir, setSearchParams])
+    
+    // Only update if params actually changed
+    const newParamString = params.toString()
+    const currentParamString = searchParams.toString()
+    if (newParamString !== currentParamString) {
+      setSearchParams(params)
+    }
+  }, [currentPage, search, sortBy, sortDir, setSearchParams, searchParams])
   
+  // For archived seasons, convert snapshots to player-like objects
+  const displayData = useMemo(() => {
+    // Find the active season to check its actual ID
+    const activeSeason = seasons.find(s => s.status === 'active')
+    const isActiveSeasonSelected = activeSeason && selectedSeason === activeSeason.id
+    
+    if (selectedSeason === null) {
+      // All seasons - use all current live players
+      return {
+        players: players.filter(p => p.rating !== null && p.rd !== null && p.volatility !== null),
+        isArchived: false,
+        isAllSeasons: true
+      }
+    } else if (isActiveSeasonSelected) {
+      // Active season - filter to only players with has_played_this_season flag
+      return {
+        players: players.filter(p => 
+          p.has_played_this_season && 
+          p.rating !== null && p.rd !== null && p.volatility !== null
+        ),
+        isArchived: false,
+        isAllSeasons: false
+      }
+    } else {
+      // Archived season - use snapshots (already filtered to players with matches)
+      return {
+        players: archivedLeaderboard.map(snap => ({
+          id: snap.player_id,
+          name: (snap as any).player?.name || `Player ${snap.player_id}`,
+          rating: snap.final_rating,
+          rd: snap.final_rd,
+          volatility: snap.final_volatility,
+          matches_played: snap.matches_played_count,
+          peak_rating: snap.peak_rating,
+          peak_rating_date: snap.peak_rating_date
+        })),
+        isArchived: true,
+        isAllSeasons: false
+      }
+    }
+  }, [selectedSeason, seasons, players, archivedLeaderboard, matches])
+
   // Players are already sorted by rating from the database query
   // Build match count per player and create a ranking map based on rating
   const { rankedPlayers, playerMatchCounts, playerRankings } = useMemo(() => {
-    // players are already sorted by rating desc in fetch
+    const displayPlayers = displayData.players as any[]
     const matchCounts = new Map<number, number>()
-    // count completed matches per player
-    for (const m of matches ?? []) {
-      matchCounts.set(m.player1_id, (matchCounts.get(m.player1_id) ?? 0) + 1)
-      matchCounts.set(m.player2_id, (matchCounts.get(m.player2_id) ?? 0) + 1)
+    
+    // For active season, count completed matches per player
+    if (!displayData.isArchived && matches) {
+      for (const m of matches) {
+        matchCounts.set(m.player1_id, (matchCounts.get(m.player1_id) ?? 0) + 1)
+        matchCounts.set(m.player2_id, (matchCounts.get(m.player2_id) ?? 0) + 1)
+      }
+    } else if (displayData.isArchived) {
+      // For archived season, use stored match count
+      for (const player of displayPlayers) {
+        matchCounts.set(player.id, player.matches_played || 0)
+      }
     }
     
     // Create ranking map based on rating (original sort order)
     const rankings = new Map<number, number>()
-    players.forEach((player, index) => {
+    displayPlayers.forEach((player, index) => {
       rankings.set(player.id, index + 1)
     })
     
-    return { rankedPlayers: players, playerMatchCounts: matchCounts, playerRankings: rankings }
-  }, [players, matches])
+    return { rankedPlayers: displayPlayers, playerMatchCounts: matchCounts, playerRankings: rankings }
+  }, [displayData, matches])
 
   // Apply filters
   const filteredPlayers = useMemo(() => {
     let list = rankedPlayers
+      // Filter to only active players (those with a rating in the current season)
+      .filter(p => p.rating !== null && p.rd !== null && p.volatility !== null)
     if (search.trim()) {
       const q = search.trim().toLowerCase()
       list = list.filter(p => p.name.toLowerCase().includes(q))
@@ -91,10 +188,10 @@ export default function Rankings() {
       let cmp = 0
       switch (sortBy) {
         case 'rating':
-          cmp = a.rating - b.rating
+          cmp = (a.rating ?? 0) - (b.rating ?? 0)
           break
         case 'rd':
-          cmp = a.rd - b.rd
+          cmp = (a.rd ?? 0) - (b.rd ?? 0)
           break
         case 'matches':
           cmp = aMatches - bMatches
@@ -158,6 +255,30 @@ export default function Rankings() {
       {!loading && !error && (
         <>
           <div className="flex flex-wrap items-center gap-2">
+            <Select value={selectedSeason === null ? 'all' : selectedSeason.toString()} onValueChange={(val) => setSelectedSeason(val === 'all' ? null : parseInt(val, 10))}>
+              <SelectTrigger className="w-full sm:w-64">
+                <SelectValue placeholder="Select a season" />
+              </SelectTrigger>
+              <SelectContent>
+                {/* All seasons option */}
+                <SelectItem value="all">
+                  All seasons
+                </SelectItem>
+                {/* Show active season */}
+                {seasons.filter(s => s.status === 'active').map(season => (
+                  <SelectItem key={season.id} value={season.id.toString()}>
+                    {season.name} (Active)
+                  </SelectItem>
+                ))}
+                {/* Then show archived seasons from oldest to newest */}
+                {seasons.filter(s => s.status === 'archived').sort((a, b) => a.id - b.id).map(season => (
+                  <SelectItem key={season.id} value={season.id.toString()}>
+                    {season.name} (Archived)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
             <Input
               placeholder="Search player…"
               value={search}
@@ -165,6 +286,8 @@ export default function Rankings() {
               className="w-full sm:w-56"
             />
           </div>
+          
+          {seasonLoading && <p className="text-muted-foreground">Loading season data...</p>}
           
           <Card>
             <CardHeader>
@@ -239,8 +362,8 @@ export default function Rankings() {
                                 <span>{player.name}</span>
                               </Link>
                             </td>
-                            <td className="py-2 pr-4 font-medium">{format(player.rating, 0)}</td>
-                            <td className="py-2 pr-4 hidden sm:table-cell" title="Rating Deviation: measures the uncertainty in a player's rating. Lower = more certain; it decreases with play and increases with inactivity.">{format(player.rd, 0)}</td>
+                            <td className="py-2 pr-4 font-medium">{format(player.rating ?? 0, 0)}</td>
+                            <td className="py-2 pr-4 hidden sm:table-cell" title="Rating Deviation: measures the uncertainty in a player's rating. Lower = more certain; it decreases with play and increases with inactivity.">{format(player.rd ?? 0, 0)}</td>
                             <td className="py-2 pr-4 hidden sm:table-cell">{totalMatches}</td>
                           </tr>
                         )

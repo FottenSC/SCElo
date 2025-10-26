@@ -6,7 +6,7 @@ export async function fetchPlayers(): Promise<Player[]> {
   try {
     const { data, error } = await supabase
       .from('players')
-      .select('id, name, twitter, created, rating, rd, volatility, peak_rating, peak_rating_date')
+      .select('id, name, twitter, created, rating, rd, volatility, peak_rating, peak_rating_date, has_played_this_season')
       .order('rating', { ascending: false })
     if (error) throw error
     
@@ -23,7 +23,7 @@ export async function fetchMatches(): Promise<Match[]> {
   try {
     const { data, error } = await supabase
       .from('matches')
-      .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link')
+      .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link, season_id')
       .order('id', { ascending: false })
     if (error) throw error
     return (data ?? []) as Match[]
@@ -37,7 +37,7 @@ export async function fetchCompletedMatches(): Promise<Match[]> {
   try {
     const { data, error } = await supabase
       .from('matches')
-      .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link')
+      .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link, season_id')
       .not('winner_id', 'is', null)
       .order('id', { ascending: false })
     if (error) throw error
@@ -52,7 +52,7 @@ export async function fetchUpcomingMatches(): Promise<Match[]> {
   try {
     const { data, error } = await supabase
       .from('matches')
-      .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link')
+      .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link, season_id')
       .is('winner_id', null)
       .order('match_order', { ascending: true })
     if (error) throw error

@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { usePlayersAndMatches, fetchEvents } from '@/lib/data'
 import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
 import { ArrowUp, ArrowDown, Youtube, ExternalLink } from 'lucide-react'
+import { supabase } from '@/supabase/client'
 
 interface MatchDetailModalProps {
   matchId: number | null
@@ -20,47 +21,125 @@ interface MatchDetailModalProps {
 export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailModalProps) {
   const { players, matches } = usePlayersAndMatches()
   const [eventTitle, setEventTitle] = React.useState<string | null>(null)
+  const [seasonName, setSeasonName] = React.useState<string | null>(null)
+  const [matchRatingEvents, setMatchRatingEvents] = React.useState<Record<number, { rating: number | null; rating_change: number | null }>>({})
 
   const match = React.useMemo(() => matches.find(m => m.id === matchId), [matches, matchId])
   const p1 = players.find(p => p.id === match?.player1_id)
   const p2 = players.find(p => p.id === match?.player2_id)
 
-  // Calculate rating after this match by subtracting all subsequent rating changes from current rating
-  const p1RatingAfter = React.useMemo(() => {
-    if (!p1 || !match) return null
-    
-    // Get all matches after this one for player 1
-    const laterMatches = matches.filter(m => 
-      m.id > match.id && (m.player1_id === p1.id || m.player2_id === p1.id)
-    )
-    
-    // Work backwards from current rating
-    let rating = p1.rating
-    for (const m of laterMatches) {
-      const change = m.player1_id === p1.id ? (m.rating_change_p1 || 0) : (m.rating_change_p2 || 0)
-      rating -= change
-    }
-    
-    return rating
-  }, [p1, match, matches])
+  React.useEffect(() => {
+    let active = true
 
-  const p2RatingAfter = React.useMemo(() => {
-    if (!p2 || !match) return null
-    
-    // Get all matches after this one for player 2
-    const laterMatches = matches.filter(m => 
-      m.id > match.id && (m.player1_id === p2.id || m.player2_id === p2.id)
-    )
-    
-    // Work backwards from current rating
-    let rating = p2.rating
-    for (const m of laterMatches) {
-      const change = m.player1_id === p2.id ? (m.rating_change_p1 || 0) : (m.rating_change_p2 || 0)
-      rating -= change
+    if (!match?.id) {
+      setMatchRatingEvents({})
+      return () => {
+        active = false
+      }
     }
-    
-    return rating
-  }, [p2, match, matches])
+
+    ;(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('rating_events')
+          .select('player_id, rating, rating_change, event_type')
+          .eq('match_id', match.id)
+
+        if (!active) return
+
+        if (error) {
+          console.warn('Failed to fetch rating events for match', match.id, error)
+          setMatchRatingEvents({})
+          return
+        }
+
+        const map: Record<number, { rating: number | null; rating_change: number | null }> = {}
+
+        for (const event of data ?? []) {
+          if (event?.event_type !== 'match' || typeof event?.player_id !== 'number') continue
+
+          map[event.player_id] = {
+            rating: typeof event.rating === 'number' ? event.rating : event.rating ?? null,
+            rating_change: typeof event.rating_change === 'number' ? event.rating_change : event.rating_change ?? null,
+          }
+        }
+
+        setMatchRatingEvents(map)
+      } catch (err) {
+        if (!active) return
+        console.warn('Failed to load rating events for match', match.id, err)
+        setMatchRatingEvents({})
+      }
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [match?.id])
+
+  type RatingDetail = {
+    ratingAfter: number | null
+    ratingBefore: number | null
+    ratingChange: number | null
+  }
+
+  const ratingDetails = React.useMemo((): { p1: RatingDetail | null; p2: RatingDetail | null } => {
+    if (!match) {
+      return { p1: null, p2: null }
+    }
+
+    const computeFallback = (player: typeof p1, ratingChange: number | null | undefined): RatingDetail | null => {
+      if (!player) return null
+
+      const laterMatches = matches.filter(m =>
+        m.id > match.id && (m.player1_id === player.id || m.player2_id === player.id)
+      )
+
+      let rating = player.rating ?? 1500
+      for (const m of laterMatches) {
+        const change = m.player1_id === player.id ? (m.rating_change_p1 ?? 0) : (m.rating_change_p2 ?? 0)
+        rating -= change
+      }
+
+      const changeValue = ratingChange ?? null
+      const before = changeValue !== null ? rating - changeValue : null
+
+      return {
+        ratingAfter: Number.isFinite(rating) ? rating : null,
+        ratingBefore: before !== null && Number.isFinite(before) ? before : null,
+        ratingChange: changeValue,
+      }
+    }
+
+    const getFromEvents = (player: typeof p1, fallbackChange: number | null | undefined): RatingDetail | null => {
+      if (!player) return null
+      const event = matchRatingEvents[player.id]
+      if (!event) return null
+
+      const changeValue = event.rating_change ?? (fallbackChange ?? null)
+      const after = event.rating ?? null
+      const before = changeValue !== null && after !== null ? after - changeValue : null
+
+      return {
+        ratingAfter: after,
+        ratingBefore: before,
+        ratingChange: changeValue,
+      }
+    }
+
+    const p1Fallback = computeFallback(p1, match.rating_change_p1 ?? null)
+    const p2Fallback = computeFallback(p2, match.rating_change_p2 ?? null)
+
+    return {
+      p1: getFromEvents(p1, match.rating_change_p1 ?? null) ?? p1Fallback,
+      p2: getFromEvents(p2, match.rating_change_p2 ?? null) ?? p2Fallback,
+    }
+  }, [match, p1, p2, matches, matchRatingEvents])
+
+  const p1Ratings = ratingDetails.p1
+  const p2Ratings = ratingDetails.p2
+  const p1RatingChange = p1Ratings?.ratingChange ?? (match?.rating_change_p1 ?? null)
+  const p2RatingChange = p2Ratings?.ratingChange ?? (match?.rating_change_p2 ?? null)
 
   React.useEffect(() => {
     if (!match?.event_id) {
@@ -77,6 +156,39 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
     })()
     return () => { active = false }
   }, [match?.event_id])
+
+  React.useEffect(() => {
+    if (!match?.season_id) {
+      setSeasonName(null)
+      return
+    }
+    
+    let active = true
+    ;(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('seasons')
+          .select('name')
+          .eq('id', match.season_id)
+          .single()
+        
+        if (!active) return
+        
+        if (error) {
+          console.warn('Failed to fetch season', error)
+          setSeasonName(null)
+          return
+        }
+        
+        setSeasonName(data?.name ?? null)
+      } catch (err) {
+        if (!active) return
+        console.warn('Failed to load season', err)
+        setSeasonName(null)
+      }
+    })()
+    return () => { active = false }
+  }, [match?.season_id])
 
   if (!match) {
     return (
@@ -137,26 +249,26 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                         )}
                       </div>
                       
-                      {(match.rating_change_p1 ?? null) !== null && (
+                      {p1RatingChange !== null && (
                         <div className="pt-3 border-t space-y-2">
                           <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Rating Change</div>
                           <div className="inline-flex items-center gap-2 text-xl font-bold">
-                            {(match.rating_change_p1 ?? 0) >= 0 ? (
+                            {(p1RatingChange ?? 0) >= 0 ? (
                               <ArrowUp size={20} className="text-green-600 dark:text-green-400" />
                             ) : (
                               <ArrowDown size={20} className="text-red-600 dark:text-red-400" />
                             )}
-                            <span className={(match.rating_change_p1 ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                              {Math.abs(match.rating_change_p1 ?? 0).toFixed(1)}
+                            <span className={(p1RatingChange ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                              {Math.abs(p1RatingChange ?? 0).toFixed(1)}
                             </span>
                           </div>
-                          {p1RatingAfter !== null && (
+                          {p1Ratings && p1Ratings.ratingBefore !== null && p1Ratings.ratingAfter !== null && (
                             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                              <span className="font-semibold text-foreground">{Math.round(p1RatingAfter - (match.rating_change_p1 ?? 0))}</span>
-                              <span className={(match.rating_change_p1 ?? 0) >= 0 ? 'text-green-600 dark:text-green-400 text-lg' : 'text-red-600 dark:text-red-400 text-lg'}>
+                              <span className="font-semibold text-foreground">{Math.round(p1Ratings.ratingBefore)}</span>
+                              <span className={(p1RatingChange ?? 0) >= 0 ? 'text-green-600 dark:text-green-400 text-lg' : 'text-red-600 dark:text-red-400 text-lg'}>
                                 →
                               </span>
-                              <span className="font-semibold text-foreground">{Math.round(p1RatingAfter)}</span>
+                              <span className="font-semibold text-foreground">{Math.round(p1Ratings.ratingAfter)}</span>
                             </div>
                           )}
                         </div>
@@ -208,26 +320,26 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                         )}
                       </div>
                       
-                      {(match.rating_change_p2 ?? null) !== null && (
+                      {p2RatingChange !== null && (
                         <div className="pt-3 border-t space-y-2">
                           <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Rating Change</div>
                           <div className="inline-flex items-center gap-2 text-xl font-bold">
-                            {(match.rating_change_p2 ?? 0) >= 0 ? (
+                            {(p2RatingChange ?? 0) >= 0 ? (
                               <ArrowUp size={20} className="text-green-600 dark:text-green-400" />
                             ) : (
                               <ArrowDown size={20} className="text-red-600 dark:text-red-400" />
                             )}
-                            <span className={(match.rating_change_p2 ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                              {Math.abs(match.rating_change_p2 ?? 0).toFixed(1)}
+                            <span className={(p2RatingChange ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                              {Math.abs(p2RatingChange ?? 0).toFixed(1)}
                             </span>
                           </div>
-                          {p2RatingAfter !== null && (
+                          {p2Ratings && p2Ratings.ratingBefore !== null && p2Ratings.ratingAfter !== null && (
                             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                              <span className="font-semibold text-foreground">{Math.round(p2RatingAfter - (match.rating_change_p2 ?? 0))}</span>
-                              <span className={(match.rating_change_p2 ?? 0) >= 0 ? 'text-green-600 dark:text-green-400 text-lg' : 'text-red-600 dark:text-red-400 text-lg'}>
+                              <span className="font-semibold text-foreground">{Math.round(p2Ratings.ratingBefore)}</span>
+                              <span className={(p2RatingChange ?? 0) >= 0 ? 'text-green-600 dark:text-green-400 text-lg' : 'text-red-600 dark:text-red-400 text-lg'}>
                                 →
                               </span>
-                              <span className="font-semibold text-foreground">{Math.round(p2RatingAfter)}</span>
+                              <span className="font-semibold text-foreground">{Math.round(p2Ratings.ratingAfter)}</span>
                             </div>
                           )}
                         </div>
@@ -240,8 +352,15 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
           </div>
 
           {/* Event and Video Links */}
-          {(match.event_id || match.vod_link) && (
-            <div className="flex items-center justify-center gap-8 pt-4 border-t">
+          {(match.event_id || match.vod_link || seasonName) && (
+            <div className="flex items-center justify-center gap-8 pt-4 border-t flex-wrap">
+              {seasonName && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Season:</span>
+                  <span className="font-medium text-base">{seasonName}</span>
+                </div>
+              )}
+              
               {match.event_id && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">Event:</span>

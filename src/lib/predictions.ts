@@ -6,25 +6,27 @@ import type { Player, RatingPrediction } from '@/types/models'
  * Returns both win and loss scenarios
  */
 export function predictRatingChange(player: Player, opponent: Player): RatingPrediction {
+  // Coerce null ratings (new season or inactive players) to Glicko defaults
+  const playerBaseRating = player.rating ?? 1500
   const playerRating: Rating = {
-    rating: player.rating,
-    rd: player.rd,
-    vol: player.volatility
+    rating: playerBaseRating,
+    rd: player.rd ?? 350,
+    vol: player.volatility ?? 0.06
   }
   
   const opponentRating: Rating = {
-    rating: opponent.rating,
-    rd: opponent.rd,
-    vol: opponent.volatility
+    rating: opponent.rating ?? 1500,
+    rd: opponent.rd ?? 350,
+    vol: opponent.volatility ?? 0.06
   }
   
   // Calculate rating after a win (score = 1)
   const afterWin = update(playerRating, [{ opponent: opponentRating, score: 1 }])
-  const winRatingChange = afterWin.rating - player.rating
+  const winRatingChange = afterWin.rating - playerBaseRating
   
   // Calculate rating after a loss (score = 0)
   const afterLoss = update(playerRating, [{ opponent: opponentRating, score: 0 }])
-  const loseRatingChange = afterLoss.rating - player.rating
+  const loseRatingChange = afterLoss.rating - playerBaseRating
   
   return {
     winRatingChange,
