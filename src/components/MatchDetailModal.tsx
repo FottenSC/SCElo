@@ -23,10 +23,57 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
   const [eventTitle, setEventTitle] = React.useState<string | null>(null)
   const [seasonName, setSeasonName] = React.useState<string | null>(null)
   const [matchRatingEvents, setMatchRatingEvents] = React.useState<Record<number, { rating: number | null; rating_change: number | null }>>({})
+  const [serverMatch, setServerMatch] = React.useState<any>(null)
+  const [fetchingFromServer, setFetchingFromServer] = React.useState(false)
 
-  const match = React.useMemo(() => matches.find(m => m.id === matchId), [matches, matchId])
+  const localMatch = React.useMemo(() => matches.find(m => m.id === matchId), [matches, matchId])
+  const match = React.useMemo(() => localMatch || serverMatch, [localMatch, serverMatch])
   const p1 = players.find(p => p.id === match?.player1_id)
   const p2 = players.find(p => p.id === match?.player2_id)
+
+  // Fetch match from server if not found locally
+  React.useEffect(() => {
+    if (!matchId || localMatch) {
+      return
+    }
+
+    let active = true
+    setFetchingFromServer(true)
+
+    ;(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('matches')
+          .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link, season_id')
+          .eq('id', matchId)
+          .single()
+
+        if (!active) return
+
+        if (error) {
+          console.warn('Failed to fetch match from server:', error)
+          setServerMatch(null)
+          setFetchingFromServer(false)
+          return
+        }
+
+        if (data) {
+          console.log('Fetched match from server:', data)
+          setServerMatch(data)
+        }
+        setFetchingFromServer(false)
+      } catch (err) {
+        if (!active) return
+        console.warn('Error fetching match from server:', err)
+        setServerMatch(null)
+        setFetchingFromServer(false)
+      }
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [matchId, localMatch])
 
   React.useEffect(() => {
     let active = true
@@ -197,7 +244,11 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
           <DialogHeader>
             <DialogTitle>Match Not Found</DialogTitle>
           </DialogHeader>
-          <p className="text-muted-foreground text-sm">The match you're looking for doesn't exist.</p>
+          {fetchingFromServer ? (
+            <p className="text-muted-foreground text-sm">Fetching match data from server...</p>
+          ) : (
+            <p className="text-muted-foreground text-sm">The match you're looking for doesn't exist.</p>
+          )}
         </DialogContent>
       </Dialog>
     )
