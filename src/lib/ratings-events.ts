@@ -55,13 +55,11 @@ type WorkerMessage = WorkerProgressMessage | WorkerResultMessage | WorkerErrorMe
  */
 export async function recalculateAllRatingsAsEvents(
   onProgress?: (progress: RecalculationProgress) => void,
-  resetReason: string = 'Full recalculation'
+  resetReason: string = 'Full recalculation',
+  seasonId?: number
 ): Promise<{ success: boolean; error?: string; eventsCreated: number }> {
   try {
-    console.log('🚀 Starting event-sourced rating recalculation...')
-    
     // Step 1: Fetch FRESH player data from database
-    console.log('📊 Step 1: Fetching players...')
     const { data: players, error: playersError } = await supabase
       .from('players')
       .select('id, name')
@@ -71,29 +69,41 @@ export async function recalculateAllRatingsAsEvents(
     if (!players || players.length === 0) {
       throw new Error('No players found')
     }
-    console.log(`✅ Fetched ${players.length} players`)
     
     // Step 2: Fetch FRESH match data from database (only completed matches)
-    console.log('🎮 Step 2: Fetching matches...')
-    const { data: matches, error: matchesError } = await supabase
+    let query = supabase
       .from('matches')
       .select('id, player1_id, player2_id, winner_id, season_id')
       .not('winner_id', 'is', null)
-      .order('id')
+    
+    // Filter by season if provided
+    if (seasonId !== undefined) {
+      query = query.eq('season_id', seasonId)
+    }
+    
+    const { data: matches, error: matchesError } = await query.order('id')
     
     if (matchesError) throw matchesError
     
     // If no matches exist, just return early
     if (!matches || matches.length === 0) {
-      console.log('⚠️ No completed matches found - nothing to recalculate')
+      // If recalculating a season, delete old events for that season first
+      if (seasonId !== undefined) {
+        const { error: deleteError } = await supabase
+          .from('rating_events')
+          .delete()
+          .eq('season_id', seasonId)
+        
+        if (deleteError) {
+          console.warn('Failed to delete old rating events:', deleteError)
+        }
+      }
       
       // Sync player table with fresh data
       const { error: syncError } = await supabase.rpc('sync_player_ratings_from_events')
       
       if (syncError) {
-        console.warn('⚠️ Failed to sync player ratings:', syncError)
-      } else {
-        console.log('✅ Player ratings synced')
+        console.warn('Failed to sync player ratings:', syncError)
       }
       
       onProgress?.({
@@ -109,13 +119,19 @@ export async function recalculateAllRatingsAsEvents(
       }
     }
     
-    console.log(`✅ Fetched ${matches.length} matches`)
+    // Delete old rating events for this season before recalculating
+    if (seasonId !== undefined) {
+      const { error: deleteError } = await supabase
+        .from('rating_events')
+        .delete()
+        .eq('season_id', seasonId)
+      
+      if (deleteError) {
+        throw deleteError
+      }
+    }
     
-    // Step 3: Prepare rating computation (worker handles state initialization)
-    console.log('⚙️ Step 3: Preparing rating computation...')
-    
-    // Step 4: Process matches via Web Worker to avoid blocking UI
-    console.log(`🧮 Step 4: Processing ${matches.length} matches in worker...`)
+    // Step 3-4: Process matches via Web Worker to avoid blocking UI
     const matchEventsFromWorker = await computeMatchEventsWithWorker(
       players.map(p => ({ id: p.id })),
       matches.map(match => ({
@@ -149,24 +165,17 @@ export async function recalculateAllRatingsAsEvents(
       season_id: matchSeasonMap.get(event.match_id) || 0
     }))
     
-    console.log(`✅ Worker produced ${matchEvents.length} match events`)
     const INSERT_BATCH_SIZE = 50
     
-    // Step 6: Batch insert match events
-    console.log(`💾 Step 6: Inserting ${matchEvents.length} events in batches...`)
+    // Step 5: Batch insert match events
     for (let i = 0; i < matchEvents.length; i += INSERT_BATCH_SIZE) {
       const batch = matchEvents.slice(i, i + INSERT_BATCH_SIZE)
-      const batchNum = Math.floor(i / INSERT_BATCH_SIZE) + 1
-      const totalBatches = Math.ceil(matchEvents.length / INSERT_BATCH_SIZE)
-      
-      console.log(`  Inserting batch ${batchNum}/${totalBatches} (${batch.length} events)`)
       
       const { error: insertError } = await supabase
         .from('rating_events')
         .insert(batch)
       
       if (insertError) {
-        console.error('Failed to insert batch:', insertError)
         throw insertError
       }
       
@@ -174,21 +183,15 @@ export async function recalculateAllRatingsAsEvents(
       await new Promise(resolve => setTimeout(resolve, 100))
     }
     
-    console.log('✅ All events inserted')
-    
-    // Step 7: Sync player table with latest ratings
-    console.log('🔄 Step 7: Syncing player table...')
+    // Step 6: Sync player table with latest ratings
     const { error: syncError } = await supabase.rpc('sync_player_ratings_from_events')
     
     if (syncError) {
-      console.warn('⚠️ Failed to sync player ratings:', syncError)
-    } else {
-      console.log('✅ Player ratings synced')
+      console.warn('Failed to sync player ratings:', syncError)
     }
     
-  // Step 8: Update matches with rating changes (for backwards compatibility)
-  console.log('📝 Step 8: Updating matches table...')
-  const matchUpdates = new Map<number, { rating_change_p1?: number; rating_change_p2?: number }>()
+    // Step 7: Update matches with rating changes (for backwards compatibility)
+    const matchUpdates = new Map<number, { rating_change_p1?: number; rating_change_p2?: number }>()
     
     matchEvents.forEach(event => {
       if (!event.match_id) return
@@ -255,14 +258,13 @@ export async function recalculateAllRatingsAsEvents(
     })
     
     console.log(`🎉 Recalculation complete! Created ${matchEvents.length} match events`)
-    
     return {
       success: true,
       eventsCreated: matchEvents.length
     }
     
   } catch (error) {
-    console.error('❌ Recalculation failed:', error)
+    console.error('Rating recalculation failed:', error)
     
     onProgress?.({
       totalMatches: 0,
@@ -655,9 +657,6 @@ export async function updateRatingForMatch(
   onProgress?: (message: string) => void
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    onProgress?.('Fetching match details...')
-    console.log(`🔄 Starting rating update for match ${matchId}`)
-    
     // Get the match
     const { data: match, error: matchError } = await supabase
       .from('matches')
@@ -672,10 +671,6 @@ export async function updateRatingForMatch(
     if (!match.winner_id) {
       throw new Error('Match has no result yet')
     }
-    
-    console.log(`📋 Match ${matchId}: Player ${match.player1_id} vs ${match.player2_id}, Winner: ${match.winner_id}`)
-    
-    onProgress?.('Fetching player ratings...')
     
     // Get both players' current rating state
     const { data: players, error: playersError } = await supabase
@@ -694,11 +689,6 @@ export async function updateRatingForMatch(
       throw new Error('One or both players not found')
     }
     
-    console.log(`👤 P1 (ID: ${p1.id}): Rating ${p1.rating.toFixed(0)}, RD ${p1.rd.toFixed(0)}, Vol ${p1.volatility.toFixed(4)}`)
-    console.log(`👤 P2 (ID: ${p2.id}): Rating ${p2.rating.toFixed(0)}, RD ${p2.rd.toFixed(0)}, Vol ${p2.volatility.toFixed(4)}`)
-    
-    onProgress?.('Calculating new ratings...')
-    
     // Convert to Glicko-2 format
     const p1Rating: Rating = {
       rating: p1.rating,
@@ -716,8 +706,6 @@ export async function updateRatingForMatch(
     const p1Score = match.winner_id === match.player1_id ? 1 : 0
     const p2Score = match.winner_id === match.player2_id ? 1 : 0
     
-    console.log(`🎮 Scores: P1=${p1Score}, P2=${p2Score}`)
-    
     // Calculate new ratings
     const newP1Rating = updateGlicko(p1Rating, [{ opponent: p2Rating, score: p1Score as 0 | 1 }])
     const newP2Rating = updateGlicko(p2Rating, [{ opponent: p1Rating, score: p2Score as 0 | 1 }])
@@ -725,12 +713,6 @@ export async function updateRatingForMatch(
     // Calculate rating changes
     const ratingChangeP1 = newP1Rating.rating - p1Rating.rating
     const ratingChangeP2 = newP2Rating.rating - p2Rating.rating
-    
-    console.log(`📊 New ratings calculated:`)
-    console.log(`   P1: ${p1.rating.toFixed(0)} → ${newP1Rating.rating.toFixed(0)} (${ratingChangeP1 >= 0 ? '+' : ''}${ratingChangeP1.toFixed(1)})`)
-    console.log(`   P2: ${p2.rating.toFixed(0)} → ${newP2Rating.rating.toFixed(0)} (${ratingChangeP2 >= 0 ? '+' : ''}${ratingChangeP2.toFixed(1)})`)
-    
-    onProgress?.('Updating database...')
     
     // Update the match record with rating changes
     const { error: matchUpdateError } = await supabase
@@ -744,8 +726,6 @@ export async function updateRatingForMatch(
     if (matchUpdateError) {
       throw new Error(`Failed to update match: ${matchUpdateError.message}`)
     }
-    
-    console.log(`✅ Match record updated with rating changes`)
     
     // Update both players' ratings AND set has_played_this_season flag
     const { error: p1UpdateError } = await supabase
@@ -761,8 +741,6 @@ export async function updateRatingForMatch(
     if (p1UpdateError) {
       throw new Error(`Failed to update player 1: ${p1UpdateError.message}`)
     }
-    
-    console.log(`✅ Player 1 updated`)
     
     const { error: p2UpdateError } = await supabase
       .from('players')

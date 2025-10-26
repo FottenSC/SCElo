@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Pencil, Trash2, Plus, RefreshCw, Undo2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { updateRatingsAfterMatch, canRollbackMatch, rollbackMatch, updateRatingForMatch } from '@/lib/ratings-events'
+import { updateRatingsAfterMatch, updateRatingForMatch, canRollbackMatch, rollbackMatch } from '@/lib/ratings-events'
 import { getAllSeasons } from '@/lib/seasons'
 
 interface MatchFormData {
@@ -40,7 +40,7 @@ export default function MatchManagement() {
     player1_id: '',
     player2_id: '',
     winner_id: '',
-  player1_score: '',
+    player1_score: '',
     player2_score: '',
     event_id: '',
     match_order: '0',
@@ -56,7 +56,7 @@ export default function MatchManagement() {
     loadData()
     loadSeasons()
   }, [])
-  
+
   const loadSeasons = async () => {
     const allSeasons = await getAllSeasons()
     setSeasons(allSeasons)
@@ -72,13 +72,13 @@ export default function MatchManagement() {
     } else {
       setLoading(true)
     }
-    
+
     // Build matches query with season filter
     let matchesQuery = supabase.from('matches').select('*').order('id', { ascending: false }).limit(100)
     if (seasonId !== null && seasonId !== undefined) {
       matchesQuery = matchesQuery.eq('season_id', seasonId)
     }
-    
+
     const [matchesRes, playersRes, eventsRes] = await Promise.all([
       matchesQuery,
       supabase.from('players').select('*').order('name'),
@@ -111,7 +111,7 @@ export default function MatchManagement() {
     setLoading(false)
     setRefreshing(false)
   }
-  
+
   // Reload matches when season changes
   useEffect(() => {
     if (selectedSeason !== null) {
@@ -130,11 +130,11 @@ export default function MatchManagement() {
 
   const openCreateDialog = () => {
     setEditingMatch(null)
-  setFormData({
+    setFormData({
       player1_id: '',
       player2_id: '',
-  winner_id: 'none',
-  player1_score: '',
+      winner_id: 'none',
+      player1_score: '',
       player2_score: '',
       event_id: 'none',
       match_order: '0',
@@ -146,7 +146,7 @@ export default function MatchManagement() {
 
   const openEditDialog = (match: Match) => {
     setEditingMatch(match)
-  setFormData({
+    setFormData({
       player1_id: String(match.player1_id),
       player2_id: String(match.player2_id),
       winner_id: match.winner_id ? String(match.winner_id) : 'none',
@@ -172,10 +172,10 @@ export default function MatchManagement() {
       }
 
       // Validate winner is one of the players (if set)
-      if (formData.winner_id && 
-          formData.winner_id !== 'none' &&
-          formData.winner_id !== formData.player1_id && 
-          formData.winner_id !== formData.player2_id) {
+      if (formData.winner_id &&
+        formData.winner_id !== 'none' &&
+        formData.winner_id !== formData.player1_id &&
+        formData.winner_id !== formData.player2_id) {
         throw new Error('Winner must be one of the two players')
       }
 
@@ -205,10 +205,10 @@ export default function MatchManagement() {
       }
 
       const hasResult = matchData.winner_id !== null
-      
+
       // Check if we need to recalculate ratings:
       // 1. Creating a new match with a result
-      // 2. Changing an existing result
+      // 2. Updating an existing match with a result (whether it changed or not)
       const wasCompleted = editingMatch?.winner_id !== null
       const resultChanged = editingMatch && wasCompleted && hasResult && (
         editingMatch.winner_id !== matchData.winner_id ||
@@ -216,7 +216,8 @@ export default function MatchManagement() {
         editingMatch.player2_score !== matchData.player2_score
       )
       const newMatchWithResult = !editingMatch && hasResult
-      
+      const shouldRecalculate = resultChanged || newMatchWithResult || (editingMatch && hasResult)
+
       let matchIdToUpdate: number | null = null
 
       if (editingMatch) {
@@ -226,13 +227,21 @@ export default function MatchManagement() {
           .eq('id', editingMatch.id)
 
         if (error) throw error
-        
+
+        // If match is transitioning from incomplete to complete, mark players as having played
+        if (hasResult && !wasCompleted) {
+          await supabase
+            .from('players')
+            .update({ has_played_this_season: true })
+            .in('id', [matchData.player1_id, matchData.player2_id])
+        }
+
         toast({
           title: 'Match updated',
-          description: resultChanged ? 'Match updated. Calculating ratings...' : 'Match has been updated successfully.'
+          description: hasResult ? 'Match updated. Calculating ratings...' : 'Match has been updated successfully.'
         })
-        
-        if (resultChanged) {
+
+        if (shouldRecalculate) {
           matchIdToUpdate = editingMatch.id
         }
       } else {
@@ -242,12 +251,20 @@ export default function MatchManagement() {
           .select()
 
         if (error) throw error
-        
+
+        // If new match has a result, mark both players as having played this season
+        if (newMatchWithResult) {
+          await supabase
+            .from('players')
+            .update({ has_played_this_season: true })
+            .in('id', [matchData.player1_id, matchData.player2_id])
+        }
+
         toast({
           title: 'Match created',
           description: newMatchWithResult ? 'Match created. Calculating ratings...' : 'Match has been created successfully.'
         })
-        
+
         // If new match has result, track the ID for rating calculation
         if (newMatchWithResult && insertedMatch && insertedMatch[0]) {
           matchIdToUpdate = insertedMatch[0].id
@@ -258,11 +275,9 @@ export default function MatchManagement() {
       loadData(true)
 
       // Recalculate ratings if we have a match to update
-      // Uses efficient single-match update instead of full recalculation
+      // Uses efficient single-match update
       if (matchIdToUpdate) {
-        const ratingResult = await updateRatingForMatch(matchIdToUpdate, (message) => {
-          console.log('Rating update:', message)
-        })
+        const ratingResult = await updateRatingForMatch(matchIdToUpdate)
 
         if (ratingResult.success) {
           toast({
@@ -320,23 +335,23 @@ export default function MatchManagement() {
 
   const checkRollbackEligibility = async (matchId: number) => {
     setCheckingRollback(prev => new Set(prev).add(matchId))
-    
+
     const result = await canRollbackMatch(matchId)
-    
+
     setRollbackEligibility(prev => new Map(prev).set(matchId, result.canRollback))
     setCheckingRollback(prev => {
       const next = new Set(prev)
       next.delete(matchId)
       return next
     })
-    
+
     return result
   }
 
   const handleRollback = async (match: Match) => {
     // Check eligibility first
     const eligibility = await checkRollbackEligibility(match.id)
-    
+
     if (!eligibility.canRollback) {
       toast({
         variant: 'destructive',
@@ -348,16 +363,14 @@ export default function MatchManagement() {
 
     const player1Name = getPlayerName(match.player1_id)
     const player2Name = getPlayerName(match.player2_id)
-    
+
     if (!confirm(`Rollback match "${player1Name} vs ${player2Name}"?\n\nThis will revert the match to an upcoming state and recalculate all ratings.`)) {
       return
     }
 
     setSubmitting(true)
-    
-    const result = await rollbackMatch(match.id, (message) => {
-      console.log('Rollback progress:', message)
-    })
+
+    const result = await rollbackMatch(match.id)
 
     if (result.success) {
       toast({
@@ -373,12 +386,12 @@ export default function MatchManagement() {
         description: result.error || 'Failed to rollback match'
       })
     }
-    
+
     setSubmitting(false)
   }
 
-  const filteredMatches = eventFilter === 'all' 
-    ? matches 
+  const filteredMatches = eventFilter === 'all'
+    ? matches
     : matches.filter(m => m.event_id === parseInt(eventFilter))
 
   return (
@@ -390,9 +403,9 @@ export default function MatchManagement() {
             <CardDescription>Create, edit, and delete matches</CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button 
-              onClick={() => loadData(true)} 
-              variant="outline" 
+            <Button
+              onClick={() => loadData(true)}
+              variant="outline"
               size="icon"
               disabled={refreshing}
             >
@@ -426,7 +439,7 @@ export default function MatchManagement() {
               ))}
             </SelectContent>
           </Select>
-          
+
           <Combobox
             value={eventFilter}
             onValueChange={setEventFilter}

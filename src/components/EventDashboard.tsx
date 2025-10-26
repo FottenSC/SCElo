@@ -89,7 +89,7 @@ export default function EventDashboard() {
     } else {
       setLoading(true)
     }
-    
+
     const { data, error } = await supabase
       .from('matches')
       .select('*')
@@ -106,7 +106,7 @@ export default function EventDashboard() {
     } else {
       setMatches(data || [])
     }
-    
+
     setLoading(false)
     setRefreshing(false)
   }
@@ -153,8 +153,8 @@ export default function EventDashboard() {
       const wasCompleted = editingMatch.winner_id !== null
       const resultChanged = wasCompleted && completing && (
         editingMatch.winner_id !== winnerId ||
-        editingMatch.player1_score !== p1Score ||
-        editingMatch.player2_score !== p2Score
+        (editingMatch.player1_score ?? null) !== p1Score ||
+        (editingMatch.player2_score ?? null) !== p2Score
       )
 
       const { error } = await supabase
@@ -168,19 +168,25 @@ export default function EventDashboard() {
 
       if (error) throw error
 
+      // If match now has a result, mark both players as having played this season
+      if (completing) {
+        await supabase
+          .from('players')
+          .update({ has_played_this_season: true })
+          .in('id', [editingMatch.player1_id, editingMatch.player2_id])
+      }
+
       toast({
         title: 'Score updated',
         description: completing ? 'Match updated. Calculating ratings...' : 'Match kept as upcoming.'
       })
-      
+
       setScoreDialogOpen(false)
       loadMatches(true)
 
-      // Only recalculate ratings if result was changed or newly set
-      if (resultChanged || (completing && !wasCompleted)) {
-        const ratingResult = await updateRatingForMatch(editingMatch.id, (message: string) => {
-          console.log('Rating update:', message)
-        })
+      // Recalculate ratings if we're completing a match (either new or updating existing)
+      if (completing) {
+        const ratingResult = await updateRatingForMatch(editingMatch.id)
 
         if (ratingResult.success) {
           toast({
@@ -213,7 +219,7 @@ export default function EventDashboard() {
   const handleRollback = async (match: Match) => {
     // Check eligibility first
     const eligibility = await canRollbackMatch(match.id)
-    
+
     if (!eligibility.canRollback) {
       toast({
         variant: 'destructive',
@@ -225,16 +231,14 @@ export default function EventDashboard() {
 
     const player1Name = getPlayerName(match.player1_id)
     const player2Name = getPlayerName(match.player2_id)
-    
+
     if (!confirm(`Rollback match "${player1Name} vs ${player2Name}"?\n\nThis will revert the match to an upcoming state and recalculate all ratings.`)) {
       return
     }
 
     setSubmitting(true)
-    
-    const result = await rollbackMatch(match.id, (message) => {
-      console.log('Rollback progress:', message)
-    })
+
+    const result = await rollbackMatch(match.id)
 
     if (result.success) {
       toast({
@@ -250,7 +254,7 @@ export default function EventDashboard() {
         description: result.error || 'Failed to rollback match'
       })
     }
-    
+
     setSubmitting(false)
   }
 
@@ -268,9 +272,9 @@ export default function EventDashboard() {
               <CardDescription>Register scores for matches within an event</CardDescription>
             </div>
             {selectedEventId && (
-              <Button 
-                onClick={() => loadMatches(true)} 
-                variant="outline" 
+              <Button
+                onClick={() => loadMatches(true)}
+                variant="outline"
                 size="icon"
                 disabled={refreshing}
               >
