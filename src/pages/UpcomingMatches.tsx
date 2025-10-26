@@ -24,18 +24,18 @@ export function UpcomingMatches() {
 
   useEffect(() => {
     let active = true
-    ;(async () => {
-      const [p, e, um] = await Promise.all([
-        fetchPlayers(),
-        fetchUpcomingEvents(),
-        fetchUpcomingMatches()
-      ])
-      if (!active) return
-      setPlayers(p)
-      setEvents(e)
-      setUpcomingMatches(um)
-      setLoading(false)
-    })()
+      ; (async () => {
+        const [p, e, um] = await Promise.all([
+          fetchPlayers(),
+          fetchUpcomingEvents(),
+          fetchUpcomingMatches()
+        ])
+        if (!active) return
+        setPlayers(p)
+        setEvents(e)
+        setUpcomingMatches(um)
+        setLoading(false)
+      })()
     return () => {
       active = false
     }
@@ -137,93 +137,77 @@ export function UpcomingMatches() {
                   const predictions = predictMatchRatingChanges(player1, player2)
 
                   return (
-                    <div key={match.id} className="p-4 border rounded-lg space-y-3">
-                      <div className="text-sm font-medium text-muted-foreground">
+                    <div key={match.id} className="p-3 border rounded-lg">
+                      <div className="text-xs font-medium text-muted-foreground mb-2">
                         Match {idx + 1}
                       </div>
-                      
-                      {/* Player 1 */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage
-                              src={getPlayerAvatarUrl(player1.twitter, 72, player1.name)}
-                              alt={player1.name}
-                            />
-                            <AvatarFallback>{getPlayerInitials(player1.name)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-semibold">
-                              <Link to={`/players/${player1.id}`} className="hover:underline text-primary">
+
+                      {/* Match layout: Player1 | VS | Player2 */}
+                      <div className="flex items-center justify-between gap-4">
+                        {/* Player 1 */}
+                        <div className="flex items-center gap-2 flex-1">
+                          <Link to={`/players/${player1.id}`} className="hover:underline text-primary shrink-0">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage
+                                src={getPlayerAvatarUrl(player1.twitter, 72, player1.name)}
+                                alt={player1.name}
+                              />
+                              <AvatarFallback className="text-xs">{getPlayerInitials(player1.name)}</AvatarFallback>
+                            </Avatar>
+                          </Link>
+                          <div className="flex-1 min-w-0">
+                            <Link to={`/players/${player1.id}`} className="hover:underline text-primary">
+                              <div className="font-semibold text-sm leading-tight truncate">
                                 {player1.name}
-                              </Link>
+                              </div>
+                            </Link>
+                            <div className="text-xs text-muted-foreground leading-tight">
+                              {player1.rating === null ? 'Unrated' : Math.round(player1.rating)}
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              Rating: {player1.rating === null ? 'Unrated' : Math.round(player1.rating)}
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <div className="text-green-600 dark:text-green-400 font-semibold text-sm leading-tight">
+                              W:{formatRatingChange(predictions.player1.winRatingChange)}
+                            </div>
+                            <div className="text-red-600 dark:text-red-400 font-semibold text-sm leading-tight">
+                              L:{formatRatingChange(predictions.player1.loseRatingChange)}
                             </div>
                           </div>
                         </div>
-                        <div className="text-right space-y-1">
-                          <div className="text-sm">
-                            <span className="text-green-600 dark:text-green-400 font-medium">
-                              Win: {formatRatingChange(predictions.player1.winRatingChange)}
-                            </span>
-                            <span className="text-muted-foreground text-xs ml-1">
-                              (→{Math.round(predictions.player1.winNewRating)})
-                            </span>
-                          </div>
-                          <div className="text-sm">
-                            <span className="text-red-600 dark:text-red-400 font-medium">
-                              Loss: {formatRatingChange(predictions.player1.loseRatingChange)}
-                            </span>
-                            <span className="text-muted-foreground text-xs ml-1">
-                              (→{Math.round(predictions.player1.loseNewRating)})
-                            </span>
-                          </div>
+
+                        {/* VS */}
+                        <div className="font-bold text-muted-foreground shrink-0">
+                          VS
                         </div>
-                      </div>
 
-                      <div className="flex items-center justify-center text-muted-foreground font-semibold">
-                        VS
-                      </div>
-
-                      {/* Player 2 */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage
-                              src={getPlayerAvatarUrl(player2.twitter, 72, player2.name)}
-                              alt={player2.name}
-                            />
-                            <AvatarFallback>{getPlayerInitials(player2.name)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-semibold">
-                              <Link to={`/players/${player2.id}`} className="hover:underline text-primary">
+                        {/* Player 2 */}
+                        <div className="flex items-center gap-2 flex-1 flex-row-reverse">
+                          <Link to={`/players/${player2.id}`} className="hover:underline text-primary shrink-0">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage
+                                src={getPlayerAvatarUrl(player2.twitter, 72, player2.name)}
+                                alt={player2.name}
+                              />
+                              <AvatarFallback className="text-xs">{getPlayerInitials(player2.name)}</AvatarFallback>
+                            </Avatar>
+                          </Link>
+                          <div className="flex-1 min-w-0">
+                            <Link to={`/players/${player2.id}`} className="hover:underline text-primary">
+                              <div className="font-semibold text-sm leading-tight truncate text-right">
                                 {player2.name}
-                              </Link>
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              Rating: {player2.rating === null ? 'Unrated' : Math.round(player2.rating)}
+                              </div>
+                            </Link>
+                            <div className="text-xs text-muted-foreground leading-tight text-right">
+                              {player2.rating === null ? 'Unrated' : Math.round(player2.rating)}
                             </div>
                           </div>
-                        </div>
-                        <div className="text-right space-y-1">
-                          <div className="text-sm">
-                            <span className="text-green-600 dark:text-green-400 font-medium">
-                              Win: {formatRatingChange(predictions.player2.winRatingChange)}
-                            </span>
-                            <span className="text-muted-foreground text-xs ml-1">
-                              (→{Math.round(predictions.player2.winNewRating)})
-                            </span>
-                          </div>
-                          <div className="text-sm">
-                            <span className="text-red-600 dark:text-red-400 font-medium">
-                              Loss: {formatRatingChange(predictions.player2.loseRatingChange)}
-                            </span>
-                            <span className="text-muted-foreground text-xs ml-1">
-                              (→{Math.round(predictions.player2.loseNewRating)})
-                            </span>
+                          <div className="shrink-0 text-left">
+                            <div className="text-green-600 dark:text-green-400 font-semibold text-sm leading-tight">
+                              W:{formatRatingChange(predictions.player2.winRatingChange)}
+                            </div>
+                            <div className="text-red-600 dark:text-red-400 font-semibold text-sm leading-tight">
+                              L:{formatRatingChange(predictions.player2.loseRatingChange)}
+                            </div>
                           </div>
                         </div>
                       </div>
