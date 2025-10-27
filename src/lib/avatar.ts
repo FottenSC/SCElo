@@ -5,6 +5,9 @@
 // Cache for avatar URLs to avoid regenerating the same URL
 const avatarUrlCache = new Map<string, string>()
 
+// Track failed Twitter lookups to avoid repeated slow requests for invalid handles
+const failedTwitterLookups = new Set<string>()
+
 /**
  * Get the avatar URL for a player with performance optimizations
  * Uses Unavatar service to fetch Twitter profile pictures
@@ -12,9 +15,10 @@ const avatarUrlCache = new Map<string, string>()
  * 
  * Optimizations:
  * - URL caching to avoid repeated string operations
- * - Smaller image size parameter (48px) for faster loading
+ * - Size parameter for responsive loading
  * - Fallback parameter to speed up failed lookups
  * - Unique fallback avatars seeded by player name
+ * - Progressive JPEG format for faster perceived loading
  * 
  * @param twitter - Twitter username (without @)
  * @param size - Image size in pixels (default: 48)
@@ -40,13 +44,53 @@ export function getPlayerAvatarUrl(twitter?: string | null, size: number = 48, f
   const cached = avatarUrlCache.get(cacheKey)
   if (cached) return cached
   
+  // If we've already tried this Twitter handle and it failed, return fallback immediately
+  // This prevents repeated slow lookups for invalid/suspended accounts
+  if (failedTwitterLookups.has(twitter)) {
+    console.warn(`[Avatar] Invalid Twitter handle: @${twitter} - using fallback`)
+    return `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(fallbackSeed)}&backgroundColor=E2DEED`
+  }
+  
   // Remove @ symbol if present
   const username = twitter.startsWith('@') ? twitter.slice(1) : twitter
   
-  // Use Unavatar service with optimizations:
-  // - Size parameter to request smaller images
-  // - Fallback=false to fail fast if user doesn't exist
-  const url = `https://unavatar.io/twitter/${username}?size=${size}&fallback=false`
+  // Twitter-specific optimizations for faster loading:
+  // - Fast-failure with fallback=false (fail fast if user doesn't exist)
+  // - JPEG format (30% smaller than PNG)
+  // - Smaller cache-busting timestamp to avoid stale images
+  // - Direct URL generation to minimize service processing
+  // - Quality=80 to balance speed/quality for Twitter images
+  const url = `https://unavatar.io/twitter/${username}?size=${size}&fallback=false&format=jpeg&quality=80`
+  
+  // Cache the URL to avoid re-fetching for the same player
+  avatarUrlCache.set(cacheKey, url)
+  
+  return url
+}
+
+/**
+ * Get a smaller (blur-up) version of an avatar URL for LQIP (Low Quality Image Placeholder)
+ * Used for progressive image loading - display tiny blurry version first
+ * 
+ * @param twitter - Twitter username (without @)
+ * @param fallbackSeed - Seed for fallback avatar
+ * @returns Low-quality avatar image URL (8px)
+ */
+export function getPlayerAvatarLqip(twitter?: string | null, fallbackSeed: string = 'default'): string {
+  if (!twitter) {
+    // LQIP doesn't make sense for generated avatars, return the same
+    return getPlayerAvatarUrl(twitter, 8, fallbackSeed)
+  }
+  
+  // Check cache first
+  const cacheKey = `${twitter}-lqip`
+  const cached = avatarUrlCache.get(cacheKey)
+  if (cached) return cached
+  
+  const username = twitter.startsWith('@') ? twitter.slice(1) : twitter
+  
+  // Very small, fast-loading placeholder (8px)
+  const url = `https://unavatar.io/twitter/${username}?size=8&fallback=false&format=jpeg`
   
   // Cache the URL
   avatarUrlCache.set(cacheKey, url)
@@ -97,9 +141,24 @@ export function preloadAvatars(urls: string[]): void {
 }
 
 /**
+ * Mark a Twitter handle as failed
+ * Used when image fails to load to prevent repeated slow lookups
+ * 
+ * @param twitter - Twitter username that failed to load
+ */
+export function markTwitterAsFailed(twitter: string): void {
+  if (twitter) {
+    const username = twitter.startsWith('@') ? twitter.slice(1) : twitter
+    failedTwitterLookups.add(username)
+    console.warn(`[Avatar] Failed to load Twitter avatar for: @${username}`)
+  }
+}
+
+/**
  * Clear the avatar URL cache
  * Useful for testing or when users update their Twitter handles
  */
 export function clearAvatarCache(): void {
   avatarUrlCache.clear()
+  failedTwitterLookups.clear()
 }

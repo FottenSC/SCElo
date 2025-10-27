@@ -1,6 +1,7 @@
 import * as React from 'react'
 import * as AvatarPrimitive from '@radix-ui/react-avatar'
 import { cn } from '@/lib/utils'
+import { markTwitterAsFailed } from '@/lib/avatar'
 
 const Avatar = React.forwardRef<React.ElementRef<typeof AvatarPrimitive.Root>, React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>>(
   ({ className, ...props }, ref) => (
@@ -9,10 +10,39 @@ const Avatar = React.forwardRef<React.ElementRef<typeof AvatarPrimitive.Root>, R
 )
 Avatar.displayName = AvatarPrimitive.Root.displayName
 
-const AvatarImage = React.forwardRef<React.ElementRef<typeof AvatarPrimitive.Image>, React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>>(
-  ({ className, ...props }, ref) => (
-    <AvatarPrimitive.Image ref={ref} className={cn('aspect-square h-full w-full', className)} {...props} />
-  ),
+interface OptimizedAvatarImageProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> {
+  lazy?: boolean
+  /** Twitter handle to mark as failed if image doesn't load */
+  twitterHandle?: string
+}
+
+const AvatarImage = React.forwardRef<React.ElementRef<typeof AvatarPrimitive.Image>, OptimizedAvatarImageProps>(
+  ({ className, lazy = true, twitterHandle, onError, ...props }, ref) => {
+    const [loaded, setLoaded] = React.useState(false)
+    
+    const handleError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+      // Mark Twitter handle as failed to skip future slow lookups
+      if (twitterHandle) {
+        markTwitterAsFailed(twitterHandle)
+      }
+      onError?.(e)
+    }
+
+    return (
+      <AvatarPrimitive.Image
+        ref={ref}
+        className={cn(
+          'aspect-square h-full w-full transition-opacity duration-300',
+          loaded ? 'opacity-100' : 'opacity-0',
+          className
+        )}
+        loading={lazy ? 'lazy' : 'eager'}
+        onLoad={() => setLoaded(true)}
+        onError={handleError}
+        {...props}
+      />
+    )
+  },
 )
 AvatarImage.displayName = AvatarPrimitive.Image.displayName
 
