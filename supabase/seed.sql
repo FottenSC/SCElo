@@ -589,10 +589,4 @@ BEGIN
   ORDER BY S.row_index;
 
   DROP TABLE seeddata;
-
-  UPDATE matches
-  SET vod_link = 'https://www.youtube.com/shorts/IZMaHVVIObs';
-
-  UPDATE events
-  SET vod_link = 'https://youtu.be/1sFbLppuhhs?si=JUlABkFdrF5MYYvy';
 END $$;

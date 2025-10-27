@@ -24,6 +24,7 @@ export async function fetchMatches(): Promise<Match[]> {
     const { data, error } = await supabase
       .from('matches')
       .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link, season_id')
+      .eq('season_id', 0)  // Only fetch matches from active season
       .order('id', { ascending: false })
     if (error) throw error
     return (data ?? []) as Match[]
@@ -38,6 +39,7 @@ export async function fetchCompletedMatches(): Promise<Match[]> {
     const { data, error } = await supabase
       .from('matches')
       .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link, season_id')
+      .eq('season_id', 0)  // Only fetch matches from active season
       .not('winner_id', 'is', null)
       .order('id', { ascending: false })
     if (error) throw error
@@ -53,6 +55,7 @@ export async function fetchUpcomingMatches(): Promise<Match[]> {
     const { data, error } = await supabase
       .from('matches')
       .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link, season_id')
+      .eq('season_id', 0)  // Only fetch matches from active season
       .is('winner_id', null)
       .order('match_order', { ascending: true })
     if (error) throw error

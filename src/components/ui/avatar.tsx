@@ -19,7 +19,7 @@ interface OptimizedAvatarImageProps extends React.ComponentPropsWithoutRef<typeo
 const AvatarImage = React.forwardRef<React.ElementRef<typeof AvatarPrimitive.Image>, OptimizedAvatarImageProps>(
   ({ className, lazy = true, twitterHandle, onError, ...props }, ref) => {
     const [loaded, setLoaded] = React.useState(false)
-    
+
     const handleError = (e: React.SyntheticEvent<HTMLImageElement>) => {
       // Mark Twitter handle as failed to skip future slow lookups
       if (twitterHandle) {

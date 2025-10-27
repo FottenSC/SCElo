@@ -76,7 +76,7 @@ export async function recalculateAllRatingsAsEvents(
       .select('id, player1_id, player2_id, winner_id, season_id')
       .not('winner_id', 'is', null)
     
-    // Filter by season if provided
+    // Filter by season if provided (note: seasonId can be 0, so check !== undefined)
     if (seasonId !== undefined) {
       query = query.eq('season_id', seasonId)
     }
