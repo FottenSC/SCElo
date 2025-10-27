@@ -59,6 +59,19 @@ export function UpcomingMatches() {
     }))
   }, [players, events, upcomingMatches])
 
+  const getEventTimeDisplay = (eventDate: string): string => {
+    const date = new Date(eventDate)
+    date.setHours(date.getHours() + 3)
+    return date.toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    })
+  }
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -92,14 +105,7 @@ export function UpcomingMatches() {
               <div>
                 <CardTitle>{event.title}</CardTitle>
                 <CardDescription>
-                  {new Date(event.event_date).toLocaleString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit'
-                  })}
+                  {getEventTimeDisplay(event.event_date)}
                 </CardDescription>
                 {event.description && (
                   <p className="text-sm text-muted-foreground mt-2">{event.description}</p>
