@@ -4,14 +4,14 @@ import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Pagination } from '@/components/ui/pagination'
-import { usePlayersAndMatches, fetchEvents } from '@/lib/data'
+import { usePlayersAndMatches, fetchEvents, fetchAllCompletedMatches } from '@/lib/data'
 import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
 import { formatRatingChange } from '@/lib/predictions'
 import { useMatchModal } from '@/components/MatchModalContext'
 import { RatingProgressionChart } from '@/components/RatingProgressionChart'
 import { Link as LinkIcon, ArrowUp, ArrowDown, Trophy, TrendingUp } from 'lucide-react'
 import { supabase } from '@/supabase/client'
-import type { Event, RatingEvent, Season } from '@/types/models'
+import type { Event, RatingEvent, Season, Match } from '@/types/models'
 import { getAllSeasons } from '@/lib/seasons'
 import { Combobox } from '@/components/ui/combobox'
 
@@ -32,7 +32,9 @@ export default function Player() {
   // Rating match events - resets are detected by season_id changes in matches
   const [ratingMatchEvents, setRatingMatchEvents] = useState<RatingEvent[]>([])
   
-  const { players, matches, loading } = usePlayersAndMatches()
+  const { players, matches: activeSeasonMatches, loading: playersLoading } = usePlayersAndMatches()
+  const [allMatches, setAllMatches] = useState<Match[]>([])
+  const [matchesLoading, setMatchesLoading] = useState(true)
   const [events, setEvents] = useState<Event[]>([])
   const [seasons, setSeasons] = useState<Season[]>([])
   // null = All seasons, number = specific season id (default to All)
@@ -55,6 +57,19 @@ export default function Player() {
       const all = await getAllSeasons()
       if (!active) return
       setSeasons(all)
+    })()
+    return () => { active = false }
+  }, [])
+
+  // Load all completed matches (across all seasons) for the player page
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      setMatchesLoading(true)
+      const allCompletedMatches = await fetchAllCompletedMatches()
+      if (!active) return
+      setAllMatches(allCompletedMatches)
+      setMatchesLoading(false)
     })()
     return () => { active = false }
   }, [])
@@ -94,14 +109,14 @@ export default function Player() {
 
   const myMatches = useMemo(() => {
     if (isNaN(playerId)) return []
-    const filtered = matches.filter((m) => m.player1_id === playerId || m.player2_id === playerId)
+    const filtered = allMatches.filter((m: Match) => m.player1_id === playerId || m.player2_id === playerId)
     // sort by most recent first
-    return filtered.sort((a, b) => b.id - a.id)
-  }, [matches, playerId])
+    return filtered.sort((a: Match, b: Match) => b.id - a.id)
+  }, [allMatches, playerId])
   
   const seasonFilteredMatches = useMemo(() => {
     if (selectedSeason === null) return myMatches
-    return myMatches.filter(m => m.season_id === selectedSeason)
+    return myMatches.filter((m: Match) => m.season_id === selectedSeason)
   }, [myMatches, selectedSeason])
   
   // Calculate stats
@@ -293,8 +308,8 @@ export default function Player() {
           ← Back to Players
         </Link>
       </div>
-      {loading && <p className="text-muted-foreground">Loading...</p>}
-      {!player && !loading && <p className="text-muted-foreground">Player not found.</p>}
+      {playersLoading && <p className="text-muted-foreground">Loading...</p>}
+      {!player && !playersLoading && <p className="text-muted-foreground">Player not found.</p>}
       {player && (
         <>
           <Card>

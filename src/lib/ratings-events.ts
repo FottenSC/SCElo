@@ -204,6 +204,31 @@ export async function recalculateAllRatingsAsEvents(
       console.warn("Failed to sync player ratings:", syncError);
     }
 
+    // Step 6b: Mark all players with matches as having played this season
+    // This flag is used on the leaderboard to show only active players
+    if (seasonId === 0) {
+      const playerIdsWithMatches = new Set<number>();
+      matches.forEach((match) => {
+        playerIdsWithMatches.add(match.player1_id);
+        playerIdsWithMatches.add(match.player2_id);
+      });
+
+      if (playerIdsWithMatches.size > 0) {
+        const { error: flagError } = await supabase
+          .from("players")
+          .update({ has_played_this_season: true })
+          .in("id", Array.from(playerIdsWithMatches));
+
+        if (flagError) {
+          console.warn("Failed to mark players as having played:", flagError);
+        } else {
+          console.log(
+            `✅ Marked ${playerIdsWithMatches.size} players as active this season`,
+          );
+        }
+      }
+    }
+
     // Step 7: Update matches with rating changes (for backwards compatibility)
     const matchUpdates = new Map<
       number,
@@ -373,7 +398,7 @@ export async function updateRatingsAfterMatch(
     const { error: deleteError } = await supabase
       .from("rating_events")
       .delete()
-      .neq("id", 0); // Delete all rows
+      .eq("season_id", 0); // Delete only active season events
 
     if (deleteError) {
       console.error("Failed to clear rating events:", deleteError);
@@ -391,6 +416,7 @@ export async function updateRatingsAfterMatch(
     const result = await recalculateAllRatingsAsEvents(
       undefined,
       "Auto-update after match result",
+      0,
     );
 
     if (result.success) {

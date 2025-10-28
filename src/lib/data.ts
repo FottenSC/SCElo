@@ -74,6 +74,23 @@ export async function fetchUpcomingMatches(): Promise<Match[]> {
   }
 }
 
+export async function fetchAllCompletedMatches(): Promise<Match[]> {
+  try {
+    const { data, error } = await supabase
+      .from("matches")
+      .select(
+        "id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link, season_id",
+      )
+      .not("winner_id", "is", null)
+      .order("id", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as Match[];
+  } catch (e) {
+    console.warn("fetchAllCompletedMatches failed:", e);
+    return [];
+  }
+}
+
 export async function fetchEvents(): Promise<Event[]> {
   try {
     const { data, error } = await supabase
