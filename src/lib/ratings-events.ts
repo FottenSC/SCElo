@@ -667,7 +667,7 @@ async function computeMatchEventsWithWorker(
  * Manually sync player ratings from events table (TypeScript implementation)
  * This replaces the SQL function with TypeScript logic to keep the philosophy
  * of minimal SQL and maximum TypeScript control.
- * 
+ *
  * If seasonId is provided, only syncs players with events in that season.
  * This prevents cross-season data contamination.
  */
@@ -681,7 +681,10 @@ async function syncPlayerRatingsFromEvents(
       .select("id");
 
     if (playersError || !players) {
-      return { success: false, error: `Failed to fetch players: ${playersError?.message}` };
+      return {
+        success: false,
+        error: `Failed to fetch players: ${playersError?.message}`,
+      };
     }
 
     // For each player, get their latest rating event (optionally filtered by season)
@@ -707,12 +710,18 @@ async function syncPlayerRatingsFromEvents(
         query = query.eq("season_id", seasonId);
       }
 
-      const { data: events, error: eventsError } = await query.order("created_at", {
-        ascending: false,
-      });
+      const { data: events, error: eventsError } = await query.order(
+        "created_at",
+        {
+          ascending: false,
+        },
+      );
 
       if (eventsError) {
-        console.warn(`Failed to fetch events for player ${player.id}:`, eventsError);
+        console.warn(
+          `Failed to fetch events for player ${player.id}:`,
+          eventsError,
+        );
         continue;
       }
 
