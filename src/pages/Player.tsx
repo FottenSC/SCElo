@@ -31,7 +31,7 @@ export default function Player() {
   const { openMatch } = useMatchModal()
   // Rating match events - resets are detected by season_id changes in matches
   const [ratingMatchEvents, setRatingMatchEvents] = useState<RatingEvent[]>([])
-  
+
   const { players, matches: activeSeasonMatches, loading: playersLoading } = usePlayersAndMatches()
   const [allMatches, setAllMatches] = useState<Match[]>([])
   const [matchesLoading, setMatchesLoading] = useState(true)
@@ -39,38 +39,38 @@ export default function Player() {
   const [seasons, setSeasons] = useState<Season[]>([])
   // null = All seasons, number = specific season id (default to All)
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null)
-  
+
   useEffect(() => {
     let active = true
-    ;(async () => {
-      const ev = await fetchEvents()
-      if (!active) return
-      setEvents(ev)
-    })()
+      ; (async () => {
+        const ev = await fetchEvents()
+        if (!active) return
+        setEvents(ev)
+      })()
     return () => { active = false }
   }, [])
 
   // Load seasons for filter (do not auto-select; keep default as All seasons)
   useEffect(() => {
     let active = true
-    ;(async () => {
-      const all = await getAllSeasons()
-      if (!active) return
-      setSeasons(all)
-    })()
+      ; (async () => {
+        const all = await getAllSeasons()
+        if (!active) return
+        setSeasons(all)
+      })()
     return () => { active = false }
   }, [])
 
   // Load all completed matches (across all seasons) for the player page
   useEffect(() => {
     let active = true
-    ;(async () => {
-      setMatchesLoading(true)
-      const allCompletedMatches = await fetchAllCompletedMatches()
-      if (!active) return
-      setAllMatches(allCompletedMatches)
-      setMatchesLoading(false)
-    })()
+      ; (async () => {
+        setMatchesLoading(true)
+        const allCompletedMatches = await fetchAllCompletedMatches()
+        if (!active) return
+        setAllMatches(allCompletedMatches)
+        setMatchesLoading(false)
+      })()
     return () => { active = false }
   }, [])
 
@@ -78,21 +78,21 @@ export default function Player() {
   useEffect(() => {
     if (isNaN(playerId)) return
     let active = true
-    ;(async () => {
-      const matchesRes = await supabase
-        .from('rating_events')
-        .select('*')
-        .eq('player_id', playerId)
-        .eq('event_type', 'match')
-        .not('match_id', 'is', null)
-        .order('id', { ascending: true })
+      ; (async () => {
+        const matchesRes = await supabase
+          .from('rating_events')
+          .select('*')
+          .eq('player_id', playerId)
+          .eq('event_type', 'match')
+          .not('match_id', 'is', null)
+          .order('id', { ascending: true })
 
-      if (!active) return
+        if (!active) return
 
-      if (!matchesRes.error && matchesRes.data) {
-        setRatingMatchEvents(matchesRes.data as RatingEvent[])
-      }
-    })()
+        if (!matchesRes.error && matchesRes.data) {
+          setRatingMatchEvents(matchesRes.data as RatingEvent[])
+        }
+      })()
     return () => { active = false }
   }, [playerId])
 
@@ -113,17 +113,17 @@ export default function Player() {
     // sort by most recent first
     return filtered.sort((a: Match, b: Match) => b.id - a.id)
   }, [allMatches, playerId])
-  
+
   const seasonFilteredMatches = useMemo(() => {
     if (selectedSeason === null) return myMatches
     return myMatches.filter((m: Match) => m.season_id === selectedSeason)
   }, [myMatches, selectedSeason])
-  
+
   // Calculate stats
   const stats = useMemo(() => {
     let w = 0, l = 0
     const recentForm: ('W' | 'L')[] = []
-    
+
     for (const m of myMatches) {
       if (!m.winner_id) continue
       const won = m.winner_id === playerId
@@ -135,16 +135,16 @@ export default function Player() {
         if (recentForm.length < 10) recentForm.push('L')
       }
     }
-    
+
     const winRate = w + l > 0 ? (w / (w + l)) * 100 : 0
-    
+
     return { w, l, winRate, recentForm }
   }, [myMatches, playerId])
 
   // Rating progression based on selected count
   const ratingHistory = useMemo(() => {
     if (!player) return []
-    
+
     // Use rating match events if available
     if (ratingMatchEvents.length > 0) {
       // Map all match events
@@ -199,11 +199,11 @@ export default function Player() {
         eventTitle: string | null
         isReset: boolean
       }> = []
-      
+
       for (let i = 0; i < uniqueMatches.length; i++) {
         const match = uniqueMatches[i]!
         const prevMatch = i > 0 ? uniqueMatches[i - 1] : null
-        
+
         // Insert a reset marker when season changes
         if (prevMatch && prevMatch.seasonId !== match.seasonId) {
           finalSeries.push({
@@ -217,7 +217,7 @@ export default function Player() {
             isReset: true,
           })
         }
-        
+
         finalSeries.push({
           matchNum: finalSeries.length + 1,
           rating: match.rating,
@@ -232,22 +232,22 @@ export default function Player() {
 
       return finalSeries
     }
-    
+
     // Fallback: use matches from the myMatches data - always show all
     const count = myMatches.length
     let selectedMatches = [...myMatches].slice(0, count).reverse()
-    
+
     if (selectedMatches.length === 0) return []
-    
+
     // Calculate starting rating
     let startingRating = player.rating ?? 1500
-    
+
     for (const m of selectedMatches) {
       if (!m.winner_id) continue
       const ratingChange = m.player1_id === playerId ? (m.rating_change_p1 || 0) : (m.rating_change_p2 || 0)
       startingRating -= ratingChange
     }
-    
+
     // Build history
     const history: Array<{
       matchNum: number
@@ -259,19 +259,19 @@ export default function Player() {
       eventTitle: string | null
       isReset: boolean
     }> = []
-    
+
     let currentRating = startingRating
     selectedMatches.forEach((m, index) => {
       if (!m.winner_id) return
-      
+
       const ratingChange = m.player1_id === playerId ? (m.rating_change_p1 || 0) : (m.rating_change_p2 || 0)
       const won = m.winner_id === playerId
       const oppId = m.player1_id === playerId ? m.player2_id : m.player1_id
       const opponent = players.find(p => p.id === oppId)
       const event = m.event_id ? events.find(e => e.id === m.event_id) : null
-      
+
       currentRating += ratingChange
-      
+
       history.push({
         matchNum: index + 1,
         rating: currentRating,
@@ -283,10 +283,10 @@ export default function Player() {
         isReset: false,
       })
     })
-    
+
     return history
   }, [myMatches, playerId, player, players, events, ratingMatchEvents])
-  
+
   // Pagination calculations
   const totalPages = Math.ceil(seasonFilteredMatches.length / ITEMS_PER_PAGE)
   const paginatedMatches = useMemo(() => {
@@ -316,8 +316,8 @@ export default function Player() {
             <CardHeader>
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage 
-                    src={getPlayerAvatarUrl(player.twitter, 96, player.name)} 
+                  <AvatarImage
+                    src={getPlayerAvatarUrl(player.twitter, 96, player.name)}
                     alt={player.name}
                   />
                   <AvatarFallback className="text-2xl">
@@ -327,7 +327,7 @@ export default function Player() {
                 <div>
                   <CardTitle>{player.name}</CardTitle>
                   {player.twitter && (
-                    <a 
+                    <a
                       href={`https://twitter.com/${player.twitter.replace('@', '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -434,11 +434,10 @@ export default function Player() {
                     stats.recentForm.map((result, i) => (
                       <div
                         key={i}
-                        className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold ${
-                          result === 'W'
+                        className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold ${result === 'W'
                             ? 'bg-green-500/20 text-green-600 dark:text-green-400'
                             : 'bg-red-500/20 text-red-600 dark:text-red-400'
-                        }`}
+                          }`}
                       >
                         {result}
                       </div>
@@ -460,7 +459,7 @@ export default function Player() {
                 <CardDescription>All {ratingHistory.length} matches</CardDescription>
               </CardHeader>
               <CardContent>
-                <RatingProgressionChart 
+                <RatingProgressionChart
                   data={ratingHistory}
                   onMatchClick={openMatch}
                 />
@@ -537,13 +536,13 @@ export default function Player() {
                           </td>
                           <td className="py-2 pr-4">
                             {opp ? (
-                              <Link 
-                                className="flex items-center gap-2 text-primary hover:underline min-w-0" 
+                              <Link
+                                className="flex items-center gap-2 text-primary hover:underline min-w-0"
                                 to={`/players/${oppId}`}
                               >
                                 <Avatar className="h-6 w-6 flex-shrink-0">
-                                  <AvatarImage 
-                                    src={getPlayerAvatarUrl(opp.twitter, 36, opp.name)} 
+                                  <AvatarImage
+                                    src={getPlayerAvatarUrl(opp.twitter, 36, opp.name)}
                                     alt={opp.name}
                                   />
                                   <AvatarFallback className="text-xs">
@@ -596,7 +595,7 @@ export default function Player() {
               </div>
             </CardContent>
           </Card>
-          
+
           {seasonFilteredMatches.length > ITEMS_PER_PAGE && (
             <Pagination
               currentPage={currentPage}

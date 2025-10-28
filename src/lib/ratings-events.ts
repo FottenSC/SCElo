@@ -108,12 +108,9 @@ export async function recalculateAllRatingsAsEvents(
       }
 
       // Sync player table with fresh data
-      const { error: syncError } = await supabase.rpc(
-        "sync_player_ratings_from_events",
-      );
-
-      if (syncError) {
-        console.warn("Failed to sync player ratings:", syncError);
+      const syncResult = await syncPlayerRatingsFromEvents(seasonId);
+      if (!syncResult.success) {
+        console.warn("Failed to sync player ratings:", syncResult.error);
       }
 
       onProgress?.({
@@ -196,12 +193,9 @@ export async function recalculateAllRatingsAsEvents(
     }
 
     // Step 6: Sync player table with latest ratings
-    const { error: syncError } = await supabase.rpc(
-      "sync_player_ratings_from_events",
-    );
-
-    if (syncError) {
-      console.warn("Failed to sync player ratings:", syncError);
+    const syncResult = await syncPlayerRatingsFromEvents(seasonId);
+    if (!syncResult.success) {
+      console.warn("Failed to sync player ratings:", syncResult.error);
     }
 
     // Step 6b: Mark all players with matches as having played this season
@@ -667,6 +661,126 @@ async function computeMatchEventsWithWorker(
 
     worker.postMessage({ players, matches });
   });
+}
+
+/**
+ * Manually sync player ratings from events table (TypeScript implementation)
+ * This replaces the SQL function with TypeScript logic to keep the philosophy
+ * of minimal SQL and maximum TypeScript control.
+ * 
+ * If seasonId is provided, only syncs players with events in that season.
+ * This prevents cross-season data contamination.
+ */
+async function syncPlayerRatingsFromEvents(
+  seasonId?: number,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Get all players that need syncing
+    const { data: players, error: playersError } = await supabase
+      .from("players")
+      .select("id");
+
+    if (playersError || !players) {
+      return { success: false, error: `Failed to fetch players: ${playersError?.message}` };
+    }
+
+    // For each player, get their latest rating event (optionally filtered by season)
+    const updates: Array<{
+      id: number;
+      rating: number | null;
+      rd: number | null;
+      volatility: number | null;
+      matches_played: number;
+      last_match_date: string | null;
+      peak_rating: number | null;
+      peak_rating_date: string | null;
+    }> = [];
+
+    for (const player of players) {
+      // Get all rating events for this player (filtered by season if provided)
+      let query = supabase
+        .from("rating_events")
+        .select("rating, rd, volatility, created_at, event_type")
+        .eq("player_id", player.id);
+
+      if (seasonId !== undefined) {
+        query = query.eq("season_id", seasonId);
+      }
+
+      const { data: events, error: eventsError } = await query.order("created_at", {
+        ascending: false,
+      });
+
+      if (eventsError) {
+        console.warn(`Failed to fetch events for player ${player.id}:`, eventsError);
+        continue;
+      }
+
+      if (!events || events.length === 0) continue;
+
+      // Get latest rating (first event after DESC order)
+      const latestEvent = events[0];
+
+      // Count match events
+      const matchCount = events.filter((e) => e.event_type === "match").length;
+
+      // Find peak rating
+      const peakEvent = events.reduce(
+        (max, e) => (e.rating > (max?.rating || 0) ? e : max),
+        null as typeof events[0] | null,
+      );
+
+      // Find last match
+      const lastMatch = events.find((e) => e.event_type === "match");
+
+      updates.push({
+        id: player.id,
+        rating: latestEvent?.rating ?? null,
+        rd: latestEvent?.rd ?? null,
+        volatility: latestEvent?.volatility ?? null,
+        matches_played: matchCount,
+        last_match_date: lastMatch?.created_at ?? null,
+        peak_rating: peakEvent?.rating ?? null,
+        peak_rating_date: peakEvent?.created_at ?? null,
+      });
+    }
+
+    // Batch update players
+    const BATCH_SIZE = 20;
+    for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+      const batch = updates.slice(i, i + BATCH_SIZE);
+
+      for (const update of batch) {
+        const { error: updateError } = await supabase
+          .from("players")
+          .update({
+            rating: update.rating,
+            rd: update.rd,
+            volatility: update.volatility,
+            matches_played: update.matches_played,
+            last_match_date: update.last_match_date,
+            peak_rating: update.peak_rating,
+            peak_rating_date: update.peak_rating_date,
+          })
+          .eq("id", update.id);
+
+        if (updateError) {
+          console.warn(`Failed to update player ${update.id}:`, updateError);
+        }
+      }
+
+      // Small delay between batches
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to sync player ratings:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 /**
