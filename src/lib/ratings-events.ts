@@ -425,7 +425,6 @@ export async function updateRatingsAfterMatch(
     console.error("Failed to update ratings:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error),
     };
   }
 }
@@ -856,121 +855,10 @@ export async function updateRatingForMatch(
   matchId: number,
   onProgress?: (message: string) => void,
 ): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Get the match
-    const { data: match, error: matchError } = await supabase
-      .from("matches")
-      .select("*")
-      .eq("id", matchId)
-      .single();
-
-    if (matchError || !match) {
-      throw new Error(`Match not found: ${matchError?.message}`);
-    }
-
-    if (!match.winner_id) {
-      throw new Error("Match has no result yet");
-    }
-
-    // Get both players' current rating state
-    const { data: players, error: playersError } = await supabase
-      .from("players")
-      .select("id, rating, rd, volatility")
-      .in("id", [match.player1_id, match.player2_id]);
-
-    if (playersError || !players || players.length !== 2) {
-      throw new Error("Could not fetch player ratings");
-    }
-
-    const p1 = players.find((p) => p.id === match.player1_id);
-    const p2 = players.find((p) => p.id === match.player2_id);
-
-    if (!p1 || !p2) {
-      throw new Error("One or both players not found");
-    }
-
-    // Convert to Glicko-2 format
-    const p1Rating: Rating = {
-      rating: p1.rating,
-      rd: p1.rd,
-      vol: p1.volatility,
-    };
-
-    const p2Rating: Rating = {
-      rating: p2.rating,
-      rd: p2.rd,
-      vol: p2.volatility,
-    };
-
-    // Determine scores
-    const p1Score = match.winner_id === match.player1_id ? 1 : 0;
-    const p2Score = match.winner_id === match.player2_id ? 1 : 0;
-
-    // Calculate new ratings
-    const newP1Rating = updateGlicko(p1Rating, [{
-      opponent: p2Rating,
-      score: p1Score as 0 | 1,
-    }]);
-    const newP2Rating = updateGlicko(p2Rating, [{
-      opponent: p1Rating,
-      score: p2Score as 0 | 1,
-    }]);
-
-    // Calculate rating changes
-    const ratingChangeP1 = newP1Rating.rating - p1Rating.rating;
-    const ratingChangeP2 = newP2Rating.rating - p2Rating.rating;
-
-    // Update the match record with rating changes
-    const { error: matchUpdateError } = await supabase
-      .from("matches")
-      .update({
-        rating_change_p1: ratingChangeP1,
-        rating_change_p2: ratingChangeP2,
-      })
-      .eq("id", matchId);
-
-    if (matchUpdateError) {
-      throw new Error(`Failed to update match: ${matchUpdateError.message}`);
-    }
-
-    // Update both players' ratings AND set has_played_this_season flag
-    const { error: p1UpdateError } = await supabase
-      .from("players")
-      .update({
-        rating: newP1Rating.rating,
-        rd: newP1Rating.rd,
-        volatility: newP1Rating.vol,
-        has_played_this_season: true,
-      })
-      .eq("id", match.player1_id);
-
-    if (p1UpdateError) {
-      throw new Error(`Failed to update player 1: ${p1UpdateError.message}`);
-    }
-
-    const { error: p2UpdateError } = await supabase
-      .from("players")
-      .update({
-        rating: newP2Rating.rating,
-        rd: newP2Rating.rd,
-        volatility: newP2Rating.vol,
-        has_played_this_season: true,
-      })
-      .eq("id", match.player2_id);
-
-    if (p2UpdateError) {
-      throw new Error(`Failed to update player 2: ${p2UpdateError.message}`);
-    }
-    onProgress?.("Rating updated successfully");
-
-    return { success: true };
-  } catch (error) {
-    console.error("❌ Failed to update rating for match:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
+  // Trigger full recalculation to ensure rating_events are created
+  // This is necessary because the rating progression graph depends on rating_events
+  onProgress?.("Recalculating all ratings...");
+  return updateRatingsAfterMatch(onProgress);
 }
 
 /**

@@ -94,7 +94,7 @@ export default function Player() {
         }
       })()
     return () => { active = false }
-  }, [playerId])
+  }, [playerId, allMatches])
 
   const player = useMemo(() => !isNaN(playerId) ? players.find((p) => p.id === playerId) : undefined, [players, playerId])
   // Set title: show placeholder while loading or player not found
