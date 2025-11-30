@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from 'react'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { Pagination } from '@/components/ui/pagination'
 import { usePlayersAndMatches, fetchEvents, fetchAllCompletedMatches } from '@/lib/data'
 import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
@@ -315,15 +315,12 @@ export default function Player() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage
-                    src={getPlayerAvatarUrl(player.twitter, 96, player.name)}
-                    alt={player.name}
-                  />
-                  <AvatarFallback className="text-2xl">
-                    {getPlayerInitials(player.name)}
-                  </AvatarFallback>
-                </Avatar>
+                <PlayerAvatar
+                  name={player.name}
+                  twitter={player.twitter}
+                  size={64}
+                  className="h-16 w-16"
+                />
                 <div>
                   <CardTitle>{player.name}</CardTitle>
                   {player.twitter && (
@@ -435,8 +432,8 @@ export default function Player() {
                       <div
                         key={i}
                         className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold ${result === 'W'
-                            ? 'bg-green-500/20 text-green-600 dark:text-green-400'
-                            : 'bg-red-500/20 text-red-600 dark:text-red-400'
+                          ? 'bg-green-500/20 text-green-600 dark:text-green-400'
+                          : 'bg-red-500/20 text-red-600 dark:text-red-400'
                           }`}
                       >
                         {result}
@@ -540,15 +537,12 @@ export default function Player() {
                                 className="flex items-center gap-2 text-primary hover:underline min-w-0"
                                 to={`/players/${oppId}`}
                               >
-                                <Avatar className="h-6 w-6 flex-shrink-0">
-                                  <AvatarImage
-                                    src={getPlayerAvatarUrl(opp.twitter, 36, opp.name)}
-                                    alt={opp.name}
-                                  />
-                                  <AvatarFallback className="text-xs">
-                                    {getPlayerInitials(opp.name)}
-                                  </AvatarFallback>
-                                </Avatar>
+                                <PlayerAvatar
+                                  name={opp.name}
+                                  twitter={opp.twitter}
+                                  size={24}
+                                  className="h-6 w-6 flex-shrink-0"
+                                />
                                 <span className="truncate">{opp.name}</span>
                               </Link>
                             ) : (

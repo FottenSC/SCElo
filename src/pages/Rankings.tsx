@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useSearchParams } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { Pagination } from '@/components/ui/pagination'
 import { Link } from 'react-router-dom'
 import { usePlayersAndMatches } from '@/lib/data'
@@ -16,9 +16,9 @@ import type { Season, SeasonPlayerSnapshot } from '@/types/models'
 const ITEMS_PER_PAGE = 25
 
 function format(num: number, digits = 0) {
-  return num.toLocaleString(undefined, { 
-    maximumFractionDigits: digits, 
-    minimumFractionDigits: digits 
+  return num.toLocaleString(undefined, {
+    maximumFractionDigits: digits,
+    minimumFractionDigits: digits
   })
 }
 
@@ -26,18 +26,18 @@ export default function Rankings() {
   useDocumentTitle('Leaderboard')
   const { players, matches, loading, error } = usePlayersAndMatches()
   const [searchParams, setSearchParams] = useSearchParams()
-  
+
   type SortKey = 'rating' | 'rd' | 'matches' | 'name'
-  
+
   // Season state
   const [seasons, setSeasons] = useState<Season[]>([])
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null)
   const [archivedLeaderboard, setArchivedLeaderboard] = useState<SeasonPlayerSnapshot[]>([])
   const [seasonLoading, setSeasonLoading] = useState(false)
-  
+
   // Load seasons on mount
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       const allSeasons = await getAllSeasons()
       setSeasons(allSeasons)
       // Default to active season
@@ -47,24 +47,24 @@ export default function Rankings() {
       }
     })()
   }, [])
-  
+
   // Load archived season leaderboard when season changes
   useEffect(() => {
     // Find the active season to know its ID
     const activeSeason = seasons.find(s => s.status === 'active')
     const isActiveSeasonSelected = activeSeason && selectedSeason === activeSeason.id
-    
+
     // Only load leaderboard data for archived seasons
     if (!selectedSeason || isActiveSeasonSelected) return
-    
-    ;(async () => {
-      setSeasonLoading(true)
-      const leaderboard = await getArchivedSeasonLeaderboard(selectedSeason)
-      setArchivedLeaderboard(leaderboard)
-      setSeasonLoading(false)
-    })()
+
+      ; (async () => {
+        setSeasonLoading(true)
+        const leaderboard = await getArchivedSeasonLeaderboard(selectedSeason)
+        setArchivedLeaderboard(leaderboard)
+        setSeasonLoading(false)
+      })()
   }, [selectedSeason, seasons])
-  
+
   // Initialize state from URL params
   const [currentPage, setCurrentPage] = useState(() => {
     const page = searchParams.get('page')
@@ -79,7 +79,7 @@ export default function Rankings() {
     const dir = searchParams.get('dir') as 'asc' | 'desc' | null
     return dir === 'asc' || dir === 'desc' ? dir : 'desc'
   })
-  
+
   // Update URL when state changes
   useEffect(() => {
     const params = new URLSearchParams()
@@ -87,7 +87,7 @@ export default function Rankings() {
     if (search) params.set('search', search)
     if (sortBy !== 'rating') params.set('sort', sortBy)
     if (sortDir !== 'desc') params.set('dir', sortDir)
-    
+
     // Only update if params actually changed
     const newParamString = params.toString()
     const currentParamString = searchParams.toString()
@@ -95,13 +95,13 @@ export default function Rankings() {
       setSearchParams(params)
     }
   }, [currentPage, search, sortBy, sortDir, setSearchParams, searchParams])
-  
+
   // For archived seasons, convert snapshots to player-like objects
   const displayData = useMemo(() => {
     // Find the active season to check its actual ID
     const activeSeason = seasons.find(s => s.status === 'active')
     const isActiveSeasonSelected = activeSeason && selectedSeason === activeSeason.id
-    
+
     if (selectedSeason === null) {
       // All seasons - use all current live players
       return {
@@ -112,8 +112,8 @@ export default function Rankings() {
     } else if (isActiveSeasonSelected) {
       // Active season - filter to only players with has_played_this_season flag
       return {
-        players: players.filter(p => 
-          p.has_played_this_season && 
+        players: players.filter(p =>
+          p.has_played_this_season &&
           p.rating !== null && p.rd !== null && p.volatility !== null
         ),
         isArchived: false,
@@ -143,7 +143,7 @@ export default function Rankings() {
   const { rankedPlayers, playerMatchCounts, playerRankings } = useMemo(() => {
     const displayPlayers = displayData.players as any[]
     const matchCounts = new Map<number, number>()
-    
+
     // For active season, count completed matches per player
     if (!displayData.isArchived && matches) {
       for (const m of matches) {
@@ -156,13 +156,13 @@ export default function Rankings() {
         matchCounts.set(player.id, player.matches_played || 0)
       }
     }
-    
+
     // Create ranking map based on rating (original sort order)
     const rankings = new Map<number, number>()
     displayPlayers.forEach((player, index) => {
       rankings.set(player.id, index + 1)
     })
-    
+
     return { rankedPlayers: displayPlayers, playerMatchCounts: matchCounts, playerRankings: rankings }
   }, [displayData, matches])
 
@@ -214,7 +214,7 @@ export default function Rankings() {
     }
     setCurrentPage(1)
   }
-  
+
   // Pagination calculations
   const totalPages = Math.ceil(sortedPlayers.length / ITEMS_PER_PAGE)
   const paginatedPlayers = useMemo(() => {
@@ -222,7 +222,7 @@ export default function Rankings() {
     const end = start + ITEMS_PER_PAGE
     return sortedPlayers.slice(start, end)
   }, [sortedPlayers, currentPage])
-  
+
   // Calculate display rank based on current sort (for display purposes)
   const getDisplayRank = (playerIndex: number) => {
     // If sorted by rating in desc order (default), show the player's true ranking
@@ -234,7 +234,7 @@ export default function Rankings() {
     // Otherwise, show sequential numbers based on current sort
     return (currentPage - 1) * ITEMS_PER_PAGE + playerIndex + 1
   }
-  
+
   // Reset to page 1 if current page is out of bounds
   if (currentPage > totalPages && totalPages > 0) {
     setCurrentPage(1)
@@ -243,15 +243,15 @@ export default function Rankings() {
   return (
     <section className="space-y-4">
       <h2 className="text-xl font-semibold">Rankings</h2>
-      
+
       {loading && <p className="text-muted-foreground">Loading rankings...</p>}
-      
+
       {error && (
         <div className="text-red-500 text-sm">
           Error loading data: {error}
         </div>
       )}
-      
+
       {!loading && !error && (
         <>
           <div className="flex flex-wrap items-center gap-2">
@@ -278,7 +278,7 @@ export default function Rankings() {
                 ))}
               </SelectContent>
             </Select>
-            
+
             <Input
               placeholder="Search player…"
               value={search}
@@ -286,9 +286,9 @@ export default function Rankings() {
               className="w-full sm:w-56"
             />
           </div>
-          
+
           {seasonLoading && <p className="text-muted-foreground">Loading season data...</p>}
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Current Ratings</CardTitle>
@@ -346,19 +346,16 @@ export default function Rankings() {
                           <tr className="border-b last:border-0" key={player.id}>
                             <td className="py-2 pr-4 w-10">{displayRank}</td>
                             <td className="py-2 pr-4">
-                              <Link 
-                                className="flex items-center gap-2 text-primary hover:underline" 
+                              <Link
+                                className="flex items-center gap-2 text-primary hover:underline"
                                 to={`/players/${player.id}`}
                               >
-                                <Avatar className="h-8 w-8">
-                                  <AvatarImage 
-                                    src={getPlayerAvatarUrl(player.twitter, 48, player.name)} 
-                                    alt={player.name}
-                                  />
-                                  <AvatarFallback className="text-xs">
-                                    {getPlayerInitials(player.name)}
-                                  </AvatarFallback>
-                                </Avatar>
+                                <PlayerAvatar
+                                  name={player.name}
+                                  twitter={player.twitter}
+                                  size={32}
+                                  className="h-8 w-8"
+                                />
                                 <span>{player.name}</span>
                               </Link>
                             </td>
@@ -376,7 +373,7 @@ export default function Rankings() {
           </Card>
         </>
       )}
-      
+
       {!loading && sortedPlayers.length > ITEMS_PER_PAGE && (
         <Pagination
           currentPage={currentPage}

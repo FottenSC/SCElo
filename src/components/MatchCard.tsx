@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
 import { formatRatingChange } from '@/lib/predictions'
 import { useMatchModal } from '@/components/MatchModalContext'
@@ -14,7 +14,7 @@ function getVideoIcon(url: string) {
   if (url.includes('twitch.tv')) {
     return (
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="inline-block">
-        <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
+        <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
       </svg>
     )
   }
@@ -52,9 +52,9 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
                   </Link>
                 )}
                 {match.vod_link && !showMatchNumber && (
-                  <a 
-                    href={match.vod_link} 
-                    target="_blank" 
+                  <a
+                    href={match.vod_link}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary hover:underline inline-flex items-center gap-1"
                   >
@@ -78,9 +78,9 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
             )}
           </div>
           {showMatchNumber && match.vod_link && (
-            <a 
-              href={match.vod_link} 
-              target="_blank" 
+            <a
+              href={match.vod_link}
+              target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
             >
@@ -90,17 +90,16 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
           )}
         </div>
       )}
-      
+
       {/* Player 1 */}
       <div className={`flex items-center justify-between ${isCompleted && isP1Winner ? 'bg-green-500/10 -mx-4 px-4 py-2 rounded-lg' : ''}`}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <Avatar className="h-12 w-12 shrink-0">
-            <AvatarImage
-              src={getPlayerAvatarUrl(player1.twitter, 72, player1.name)}
-              alt={player1.name}
-            />
-            <AvatarFallback>{getPlayerInitials(player1.name)}</AvatarFallback>
-          </Avatar>
+          <PlayerAvatar
+            name={player1.name}
+            twitter={player1.twitter}
+            size={48}
+            className="h-12 w-12 shrink-0"
+          />
           <div className="min-w-0">
             <Link to={`/players/${player1.id}`} className="hover:underline">
               <div className={`font-semibold flex items-center gap-2 flex-wrap ${isCompleted && isP1Winner ? 'text-green-600 dark:text-green-400' : isCompleted ? 'text-muted-foreground' : ''}`}>
@@ -125,8 +124,8 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
 
       {/* Score / VS */}
       {isCompleted ? (
-        <button 
-          onClick={() => openMatch(match.id)} 
+        <button
+          onClick={() => openMatch(match.id)}
           className="flex items-center justify-center gap-2 font-semibold cursor-pointer w-full"
         >
           <span className={isP1Winner ? 'text-green-600 dark:text-green-400 text-2xl' : 'text-muted-foreground text-xl'}>
@@ -146,13 +145,12 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
       {/* Player 2 */}
       <div className={`flex items-center justify-between ${isCompleted && !isP1Winner ? 'bg-green-500/10 -mx-4 px-4 py-2 rounded-lg' : ''}`}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <Avatar className="h-12 w-12 shrink-0">
-            <AvatarImage
-              src={getPlayerAvatarUrl(player2.twitter, 72, player2.name)}
-              alt={player2.name}
-            />
-            <AvatarFallback>{getPlayerInitials(player2.name)}</AvatarFallback>
-          </Avatar>
+          <PlayerAvatar
+            name={player2.name}
+            twitter={player2.twitter}
+            size={48}
+            className="h-12 w-12 shrink-0"
+          />
           <div className="min-w-0">
             <Link to={`/players/${player2.id}`} className="hover:underline">
               <div className={`font-semibold flex items-center gap-2 flex-wrap ${isCompleted && !isP1Winner ? 'text-green-600 dark:text-green-400' : isCompleted ? 'text-muted-foreground' : ''}`}>
@@ -174,7 +172,7 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
           </div>
         )}
       </div>
-      
+
       {/* Footer with Event Link and VOD Links (only if not shown in header) */}
       {!showLinksInHeader && !showMatchNumber && hasLinks && (
         <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground border-t pt-2">
@@ -184,9 +182,9 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
             </Link>
           )}
           {match.vod_link && (
-            <a 
-              href={match.vod_link} 
-              target="_blank" 
+            <a
+              href={match.vod_link}
+              target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline inline-flex items-center gap-1"
             >

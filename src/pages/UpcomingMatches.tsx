@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { fetchPlayers, fetchUpcomingEvents, fetchUpcomingMatches } from '@/lib/data'
 import { predictMatchRatingChanges, formatRatingChange } from '@/lib/predictions'
 import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
@@ -153,13 +153,12 @@ export function UpcomingMatches() {
                         {/* Player 1 */}
                         <div className="flex items-center gap-2 flex-1">
                           <Link to={`/players/${player1.id}`} className="hover:underline text-primary shrink-0">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage
-                                src={getPlayerAvatarUrl(player1.twitter, 72, player1.name)}
-                                alt={player1.name}
-                              />
-                              <AvatarFallback className="text-xs">{getPlayerInitials(player1.name)}</AvatarFallback>
-                            </Avatar>
+                            <PlayerAvatar
+                              name={player1.name}
+                              twitter={player1.twitter}
+                              size={40}
+                              className="h-10 w-10"
+                            />
                           </Link>
                           <div className="flex-1 min-w-0">
                             <Link to={`/players/${player1.id}`} className="hover:underline text-primary">
@@ -189,13 +188,12 @@ export function UpcomingMatches() {
                         {/* Player 2 */}
                         <div className="flex items-center gap-2 flex-1 flex-row-reverse">
                           <Link to={`/players/${player2.id}`} className="hover:underline text-primary shrink-0">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage
-                                src={getPlayerAvatarUrl(player2.twitter, 72, player2.name)}
-                                alt={player2.name}
-                              />
-                              <AvatarFallback className="text-xs">{getPlayerInitials(player2.name)}</AvatarFallback>
-                            </Avatar>
+                            <PlayerAvatar
+                              name={player2.name}
+                              twitter={player2.twitter}
+                              size={40}
+                              className="h-10 w-10"
+                            />
                           </Link>
                           <div className="flex-1 min-w-0">
                             <Link to={`/players/${player2.id}`} className="hover:underline text-primary">

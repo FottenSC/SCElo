@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { usePlayersAndMatches, fetchEvents } from '@/lib/data'
 import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
 import { ArrowUp, ArrowDown, Youtube, ExternalLink } from 'lucide-react'
@@ -40,35 +40,35 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
     let active = true
     setFetchingFromServer(true)
 
-    ;(async () => {
-      try {
-        const { data, error } = await supabase
-          .from('matches')
-          .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link, season_id')
-          .eq('id', matchId)
-          .single()
+      ; (async () => {
+        try {
+          const { data, error } = await supabase
+            .from('matches')
+            .select('id, player1_id, player2_id, winner_id, player1_score, player2_score, rating_change_p1, rating_change_p2, event_id, match_order, vod_link, season_id')
+            .eq('id', matchId)
+            .single()
 
-        if (!active) return
+          if (!active) return
 
-        if (error) {
-          console.warn('Failed to fetch match from server:', error)
+          if (error) {
+            console.warn('Failed to fetch match from server:', error)
+            setServerMatch(null)
+            setFetchingFromServer(false)
+            return
+          }
+
+          if (data) {
+            console.log('Fetched match from server:', data)
+            setServerMatch(data)
+          }
+          setFetchingFromServer(false)
+        } catch (err) {
+          if (!active) return
+          console.warn('Error fetching match from server:', err)
           setServerMatch(null)
           setFetchingFromServer(false)
-          return
         }
-
-        if (data) {
-          console.log('Fetched match from server:', data)
-          setServerMatch(data)
-        }
-        setFetchingFromServer(false)
-      } catch (err) {
-        if (!active) return
-        console.warn('Error fetching match from server:', err)
-        setServerMatch(null)
-        setFetchingFromServer(false)
-      }
-    })()
+      })()
 
     return () => {
       active = false
@@ -85,7 +85,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
       }
     }
 
-    ;(async () => {
+    ; (async () => {
       try {
         const { data, error } = await supabase
           .from('rating_events')
@@ -193,14 +193,14 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
       setEventTitle(null)
       return
     }
-    
+
     let active = true
-    ;(async () => {
-      const events = await fetchEvents()
-      if (!active) return
-      const ev = events.find(e => e.id === match.event_id)
-      setEventTitle(ev?.title ?? null)
-    })()
+      ; (async () => {
+        const events = await fetchEvents()
+        if (!active) return
+        const ev = events.find(e => e.id === match.event_id)
+        setEventTitle(ev?.title ?? null)
+      })()
     return () => { active = false }
   }, [match?.event_id])
 
@@ -209,31 +209,31 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
       setSeasonName(null)
       return
     }
-    
+
     let active = true
-    ;(async () => {
-      try {
-        const { data, error } = await supabase
-          .from('seasons')
-          .select('name')
-          .eq('id', match.season_id)
-          .single()
-        
-        if (!active) return
-        
-        if (error) {
-          console.warn('Failed to fetch season', error)
+      ; (async () => {
+        try {
+          const { data, error } = await supabase
+            .from('seasons')
+            .select('name')
+            .eq('id', match.season_id)
+            .single()
+
+          if (!active) return
+
+          if (error) {
+            console.warn('Failed to fetch season', error)
+            setSeasonName(null)
+            return
+          }
+
+          setSeasonName(data?.name ?? null)
+        } catch (err) {
+          if (!active) return
+          console.warn('Failed to load season', err)
           setSeasonName(null)
-          return
         }
-        
-        setSeasonName(data?.name ?? null)
-      } catch (err) {
-        if (!active) return
-        console.warn('Failed to load season', err)
-        setSeasonName(null)
-      }
-    })()
+      })()
     return () => { active = false }
   }, [match?.season_id])
 
@@ -260,7 +260,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
         <DialogHeader className="sr-only">
           <DialogTitle>Match Details</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-8 py-2">
           {/* Main Match Display - Side by Side Layout */}
           <div className="grid grid-cols-[1fr_auto_1fr] gap-8 items-start">
@@ -268,29 +268,30 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
             <div className="flex flex-col items-center gap-4">
               {p1 && (
                 <>
-                  <Link 
-                    className="group text-center" 
+                  <Link
+                    className="group text-center"
                     to={`/players/${p1.id}`}
                     onClick={() => onOpenChange(false)}
                   >
-                    <Avatar className="h-24 w-24 mx-auto ring-2 ring-border group-hover:ring-primary transition-all">
-                      <AvatarImage src={getPlayerAvatarUrl(p1.twitter, 144, p1.name)} />
-                      <AvatarFallback className="text-2xl">{getPlayerInitials(p1.name)}</AvatarFallback>
-                    </Avatar>
+                    <PlayerAvatar
+                      name={p1.name}
+                      twitter={p1.twitter}
+                      size={96}
+                      className="h-24 w-24 mx-auto ring-2 ring-border group-hover:ring-primary transition-all"
+                    />
                     <div className="font-semibold text-lg mt-3 group-hover:text-primary transition-colors">{p1.name}</div>
                   </Link>
-                  
+
                   {/* Player 1 Stats Card */}
-                  <div className={`w-full rounded-lg border-2 p-4 ${
-                    match.winner_id === match.player1_id 
-                      ? 'border-green-500/50 bg-green-500/5' 
+                  <div className={`w-full rounded-lg border-2 p-4 ${match.winner_id === match.player1_id
+                      ? 'border-green-500/50 bg-green-500/5'
                       : 'border-border'
-                  }`}>
+                    }`}>
                     <div className="text-center space-y-3">
                       <div>
                         <div className="text-6xl font-bold mb-1" style={{
-                          color: match.winner_id === match.player1_id 
-                            ? 'hsl(var(--chart-2))' 
+                          color: match.winner_id === match.player1_id
+                            ? 'hsl(var(--chart-2))'
                             : 'hsl(var(--muted-foreground))'
                         }}>
                           {match.player1_score ?? '?'}
@@ -299,7 +300,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                           <div className="text-sm font-medium text-green-600 dark:text-green-400">Winner</div>
                         )}
                       </div>
-                      
+
                       {p1RatingChange !== null && (
                         <div className="pt-3 border-t space-y-2">
                           <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Rating Change</div>
@@ -339,29 +340,30 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
             <div className="flex flex-col items-center gap-4">
               {p2 && (
                 <>
-                  <Link 
-                    className="group text-center" 
+                  <Link
+                    className="group text-center"
                     to={`/players/${p2.id}`}
                     onClick={() => onOpenChange(false)}
                   >
-                    <Avatar className="h-24 w-24 mx-auto ring-2 ring-border group-hover:ring-primary transition-all">
-                      <AvatarImage src={getPlayerAvatarUrl(p2.twitter, 144, p2.name)} />
-                      <AvatarFallback className="text-2xl">{getPlayerInitials(p2.name)}</AvatarFallback>
-                    </Avatar>
+                    <PlayerAvatar
+                      name={p2.name}
+                      twitter={p2.twitter}
+                      size={96}
+                      className="h-24 w-24 mx-auto ring-2 ring-border group-hover:ring-primary transition-all"
+                    />
                     <div className="font-semibold text-lg mt-3 group-hover:text-primary transition-colors">{p2.name}</div>
                   </Link>
-                  
+
                   {/* Player 2 Stats Card */}
-                  <div className={`w-full rounded-lg border-2 p-4 ${
-                    match.winner_id === match.player2_id 
-                      ? 'border-green-500/50 bg-green-500/5' 
+                  <div className={`w-full rounded-lg border-2 p-4 ${match.winner_id === match.player2_id
+                      ? 'border-green-500/50 bg-green-500/5'
                       : 'border-border'
-                  }`}>
+                    }`}>
                     <div className="text-center space-y-3">
                       <div>
                         <div className="text-6xl font-bold mb-1" style={{
-                          color: match.winner_id === match.player2_id 
-                            ? 'hsl(var(--chart-2))' 
+                          color: match.winner_id === match.player2_id
+                            ? 'hsl(var(--chart-2))'
                             : 'hsl(var(--muted-foreground))'
                         }}>
                           {match.player2_score ?? '?'}
@@ -370,7 +372,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                           <div className="text-sm font-medium text-green-600 dark:text-green-400">Winner</div>
                         )}
                       </div>
-                      
+
                       {p2RatingChange !== null && (
                         <div className="pt-3 border-t space-y-2">
                           <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Rating Change</div>
@@ -411,12 +413,12 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                   <span className="font-medium text-base">{seasonName}</span>
                 </div>
               )}
-              
+
               {match.event_id && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">Event:</span>
-                  <Link 
-                    className="text-primary hover:underline font-medium text-base" 
+                  <Link
+                    className="text-primary hover:underline font-medium text-base"
                     to={`/events/${match.event_id}`}
                     onClick={() => onOpenChange(false)}
                   >
@@ -424,9 +426,9 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                   </Link>
                 </div>
               )}
-              
+
               {match.vod_link && (
-                <a 
+                <a
                   href={match.vod_link}
                   target="_blank"
                   rel="noopener noreferrer"
