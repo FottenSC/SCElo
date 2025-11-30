@@ -193,9 +193,12 @@ export async function recalculateAllRatingsAsEvents(
     }
 
     // Step 6: Sync player table with latest ratings
+    console.log("🔄 Syncing player ratings from events...");
     const syncResult = await syncPlayerRatingsFromEvents(seasonId);
     if (!syncResult.success) {
       console.warn("Failed to sync player ratings:", syncResult.error);
+    } else {
+      console.log("✅ Player ratings synced successfully");
     }
 
     // Step 6b: Mark all players with matches as having played this season
@@ -711,7 +714,7 @@ async function syncPlayerRatingsFromEvents(
       }
 
       const { data: events, error: eventsError } = await query.order(
-        "created_at",
+        "id",
         {
           ascending: false,
         },
@@ -782,6 +785,7 @@ async function syncPlayerRatingsFromEvents(
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
 
+    console.log(`✅ Updated ${updates.length} players from rating events`);
     return { success: true };
   } catch (error) {
     console.error("Failed to sync player ratings:", error);
