@@ -122,24 +122,53 @@ export default function Player() {
   // Calculate stats
   const stats = useMemo(() => {
     let w = 0, l = 0
-    const recentForm: ('W' | 'L')[] = []
+    const recentForm: {
+      result: 'W' | 'L'
+      matchId: number
+      opponentName: string
+      score: string
+      ratingChange: number | null
+    }[] = []
 
     for (const m of myMatches) {
       if (!m.winner_id) continue
       const won = m.winner_id === playerId
+      const isPlayer1 = m.player1_id === playerId
+      const opponentId = isPlayer1 ? m.player2_id : m.player1_id
+      const opponent = players.find(p => p.id === opponentId)
+      const myScore = isPlayer1 ? m.player1_score : m.player2_score
+      const oppScore = isPlayer1 ? m.player2_score : m.player1_score
+      const ratingChange = isPlayer1 ? m.rating_change_p1 : m.rating_change_p2
+
       if (won) {
         w++
-        if (recentForm.length < 10) recentForm.push('W')
+        if (recentForm.length < 10) {
+          recentForm.push({
+            result: 'W',
+            matchId: m.id,
+            opponentName: opponent?.name || 'Unknown',
+            score: `${myScore ?? '?'}-${oppScore ?? '?'}`,
+            ratingChange: ratingChange ?? null
+          })
+        }
       } else {
         l++
-        if (recentForm.length < 10) recentForm.push('L')
+        if (recentForm.length < 10) {
+          recentForm.push({
+            result: 'L',
+            matchId: m.id,
+            opponentName: opponent?.name || 'Unknown',
+            score: `${myScore ?? '?'}-${oppScore ?? '?'}`,
+            ratingChange: ratingChange ?? null
+          })
+        }
       }
     }
 
     const winRate = w + l > 0 ? (w / (w + l)) * 100 : 0
 
     return { w, l, winRate, recentForm }
-  }, [myMatches, playerId])
+  }, [myMatches, playerId, players])
 
   // Rating progression based on selected count
   const ratingHistory = useMemo(() => {
@@ -394,34 +423,64 @@ export default function Player() {
               </div>
             </div>
 
-            {/* Recent Form */}
+            {/* Badges & Recent Form */}
             <div className="px-6 pb-6 md:px-8 md:pb-8 relative z-10">
               <div className="border-t border-border/30 pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground">Recent Form</div>
-                  <div className="text-xs text-muted-foreground">Last 10 matches</div>
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Badges */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground">Badges</div>
+                    </div>
+                    <div className="flex items-center justify-center py-8 bg-background/40 rounded-lg border border-border/50">
+                      <span className="text-sm text-muted-foreground italic">No badges earned yet.</span>
+                    </div>
+                  </div>
 
-                {stats.recentForm.length === 0 ? (
-                  <div className="flex items-center justify-center py-8 bg-background/40 rounded-lg border border-border/50">
-                    <span className="text-sm text-muted-foreground italic">No recent matches recorded.</span>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-5 md:grid-cols-10 gap-2 md:gap-3">
-                    {stats.recentForm.map((result, i) => (
-                      <div
-                        key={i}
-                        className={`aspect-square rounded-lg border-2 flex flex-col items-center justify-center font-bold shadow-lg transition-all hover:scale-105 hover:shadow-xl ${result === 'W'
-                          ? 'bg-green-500/20 border-green-500/60 text-green-400'
-                          : 'bg-red-500/20 border-red-500/60 text-red-400'
-                          }`}
-                      >
-                        <div className="text-xl md:text-2xl">{result}</div>
-                        <div className="text-[9px] md:text-[10px] text-muted-foreground mt-0.5 md:mt-1">#{stats.recentForm.length - i}</div>
+                  {/* Recent Form */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground">Recent Form</div>
+                      <div className="text-xs text-muted-foreground">Last 10 matches</div>
+                    </div>
+
+                    {stats.recentForm.length === 0 ? (
+                      <div className="flex items-center justify-center py-8 bg-background/40 rounded-lg border border-border/50">
+                        <span className="text-sm text-muted-foreground italic">No recent matches recorded.</span>
                       </div>
-                    ))}
+                    ) : (
+                      <div className="flex gap-1.5 flex-1">
+                        {stats.recentForm.map((form, i) => (
+                          <div key={i} className="relative group flex-1">
+                            <button
+                              onClick={() => openMatch(form.matchId)}
+                              className={`w-full aspect-square rounded border-2 flex items-center justify-center font-bold shadow-md transition-all hover:scale-110 hover:shadow-lg cursor-pointer ${form.result === 'W'
+                                ? 'bg-green-500/20 border-green-500/60 text-green-400 hover:bg-green-500/30'
+                                : 'bg-red-500/20 border-red-500/60 text-red-400 hover:bg-red-500/30'
+                                }`}
+                            >
+                              <div className="text-base font-bold">{form.result}</div>
+                            </button>
+                            {/* Tooltip */}
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-popover border border-border rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap">
+                              <div className="text-xs font-heading font-bold text-foreground">{form.opponentName}</div>
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                Score: <span className="font-bold text-foreground">{form.score}</span>
+                              </div>
+                              {form.ratingChange !== null && (
+                                <div className={`text-xs font-bold mt-0.5 ${form.ratingChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {form.ratingChange >= 0 ? '+' : ''}{Math.round(form.ratingChange)}
+                                </div>
+                              )}
+                              {/* Arrow */}
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border"></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
