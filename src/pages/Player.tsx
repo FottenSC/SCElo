@@ -449,17 +449,17 @@ export default function Player() {
                         <span className="text-sm text-muted-foreground italic">No recent matches recorded.</span>
                       </div>
                     ) : (
-                      <div className="flex gap-1.5 flex-1">
+                      <div className="flex gap-1.5">
                         {stats.recentForm.map((form, i) => (
-                          <div key={i} className="relative group flex-1">
+                          <div key={i} className="relative group">
                             <button
                               onClick={() => openMatch(form.matchId)}
-                              className={`w-full aspect-square rounded border-2 flex items-center justify-center font-bold shadow-md transition-all hover:scale-110 hover:shadow-lg cursor-pointer ${form.result === 'W'
+                              className={`w-14 h-14 rounded border-2 flex items-center justify-center font-bold shadow-md transition-all hover:scale-110 hover:shadow-lg cursor-pointer ${form.result === 'W'
                                 ? 'bg-green-500/20 border-green-500/60 text-green-400 hover:bg-green-500/30'
                                 : 'bg-red-500/20 border-red-500/60 text-red-400 hover:bg-red-500/30'
                                 }`}
                             >
-                              <div className="text-base font-bold">{form.result}</div>
+                              <div className="text-lg font-bold">{form.result}</div>
                             </button>
                             {/* Tooltip */}
                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-popover border border-border rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap">
@@ -487,20 +487,21 @@ export default function Player() {
 
           {/* Rating Progression */}
           {ratingHistory.length > 0 && (
-            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-heading uppercase tracking-wider text-lg">
-                  <TrendingUp size={20} className="text-primary" />
-                  Rating History
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="relative overflow-hidden rounded-lg border border-primary/30 bg-card/80 backdrop-blur-md shadow-lg">
+              <div className="absolute top-0 left-0 w-1 h-full bg-primary/60" />
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-lg bg-primary/10 border border-primary/30">
+                    <TrendingUp size={20} className="text-primary" />
+                  </div>
+                  <h3 className="font-heading uppercase tracking-wider text-lg text-foreground">Rating History</h3>
+                </div>
                 <RatingProgressionChart
                   data={ratingHistory}
                   onMatchClick={openMatch}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Battle Log - Full Width */}

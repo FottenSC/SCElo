@@ -5,14 +5,17 @@ import App from './pages/App'
 import './index.css'
 import { AuthProvider } from '@/supabase/AuthContext'
 import { ThemeProvider } from '@/components/theme-provider'
+import { AvatarCacheProvider } from '@/components/AvatarCacheContext'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AuthProvider>
       <ThemeProvider defaultTheme="dark" storageKey="scelo-theme">
-        <HashRouter>
-          <App />
-        </HashRouter>
+        <AvatarCacheProvider>
+          <HashRouter>
+            <App />
+          </HashRouter>
+        </AvatarCacheProvider>
       </ThemeProvider>
     </AuthProvider>
   </React.StrictMode>,

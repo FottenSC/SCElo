@@ -69,10 +69,14 @@ export function RatingProgressionChart({ data, onMatchClick }: RatingProgression
       chart: {
         type: 'candlestick',
         backgroundColor: 'transparent',
-        height: 400,
-        spacingBottom: 20,
+        height: 350,
+        spacingBottom: 15,
+        spacingTop: 10,
+        style: {
+          fontFamily: 'Lato, sans-serif',
+        },
       },
-      credits: { enabled: true },
+      credits: { enabled: false },
       exporting: { enabled: true },
       navigator: { enabled: false },
       scrollbar: { enabled: false },
@@ -82,16 +86,28 @@ export function RatingProgressionChart({ data, onMatchClick }: RatingProgression
       xAxis: {
         type: 'linear',
         title: {
-          text: 'Match Number',
+          text: 'Match #',
           style: {
-            fontSize: '12px',
+            fontSize: '11px',
+            color: '#9ca3af',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
           },
         },
         labels: {
+          style: {
+            color: '#6b7280',
+            fontSize: '10px',
+          },
           formatter: function (this: any): string {
             return String(this.value + 1)
           },
         },
+        lineColor: '#374151',
+        tickColor: '#374151',
+        gridLineColor: '#1f2937',
+        gridLineWidth: 1,
         // Ensure the chart shows the full data range on first render
         min: data.length > 0 ? 0 : undefined,
         max: data.length > 0 ? Math.max(0, data.length - 1) : undefined,
@@ -104,9 +120,22 @@ export function RatingProgressionChart({ data, onMatchClick }: RatingProgression
         title: {
           text: 'Rating',
           style: {
-            fontSize: '12px',
+            fontSize: '11px',
+            color: '#9ca3af',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
           },
         },
+        labels: {
+          style: {
+            color: '#6b7280',
+            fontSize: '10px',
+          },
+        },
+        gridLineColor: '#1f2937',
+        gridLineWidth: 1,
+        lineColor: '#374151',
         opposite: false,
         accessibility: {
           description: 'Rating value',
@@ -142,11 +171,17 @@ export function RatingProgressionChart({ data, onMatchClick }: RatingProgression
       tooltip: {
         shared: true,
         useHTML: true,
-        backgroundColor: 'rgba(20, 25, 40, 0.9)',
-        borderColor: '#ca8a04',
-        borderRadius: 4,
+        backgroundColor: 'rgba(15, 20, 30, 0.95)',
+        borderColor: 'rgba(234, 179, 8, 0.5)',
+        borderRadius: 8,
         borderWidth: 1,
-        shadow: true,
+        shadow: {
+          color: 'rgba(0, 0, 0, 0.5)',
+          offsetX: 0,
+          offsetY: 4,
+          opacity: 0.5,
+          width: 10,
+        },
         style: {
           color: '#e5e7eb',
           fontFamily: 'Lato, sans-serif',
@@ -211,7 +246,7 @@ export function RatingProgressionChart({ data, onMatchClick }: RatingProgression
             },
             chartOptions: {
               chart: {
-                height: 300,
+                height: 280,
               },
               xAxis: {
                 labels: {

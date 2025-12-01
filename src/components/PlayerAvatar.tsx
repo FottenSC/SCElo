@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import Avatar from 'boring-avatars'
 import { getPlayerAvatarUrl } from '@/lib/avatar'
 import { cn } from '@/lib/utils'
+import { useAvatarCache } from '@/components/AvatarCacheContext'
 
 interface PlayerAvatarProps {
     name: string
@@ -21,10 +22,12 @@ export function PlayerAvatar({
     colors = ['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90'],
 }: PlayerAvatarProps) {
     const [imageError, setImageError] = useState(false)
+    const { getCachedUrl } = useAvatarCache()
 
     // If we have a twitter handle and haven't errored, try to show the image
     const showImage = twitter && !imageError
-    const avatarUrl = twitter ? getPlayerAvatarUrl(twitter, size * 2) : null
+    // Use cached URL if available, otherwise fall back to direct URL
+    const avatarUrl = twitter ? (getCachedUrl(twitter, size * 2) || getPlayerAvatarUrl(twitter, size * 2)) : null
 
     return (
         <div
