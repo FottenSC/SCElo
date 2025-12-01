@@ -449,7 +449,7 @@ export default function Player() {
                         <span className="text-sm text-muted-foreground italic">No recent matches recorded.</span>
                       </div>
                     ) : (
-                      <div className="flex gap-1.5">
+                      <div className="flex flex-wrap gap-1.5">
                         {stats.recentForm.map((form, i) => (
                           <div key={i} className="relative group">
                             <button
