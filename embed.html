@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OFC Player Embed</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .container {
+      max-width: 600px;
+      text-align: center;
+    }
+    h1 { color: #eab308; }
+    code {
+      background: #1a1a1a;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #eab308;
+    }
+    a { color: #eab308; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>OFC Player Embed Links</h1>
+    <p>To share a player profile with rich embeds on Discord, Twitter, etc., use this URL format:</p>
+    <p><code>https://rfdrkeqnmwtdhttcgotb.supabase.co/functions/v1/player-embed?id=PLAYER_ID</code></p>
+    <p>Replace <code>PLAYER_ID</code> with the player's ID number.</p>
+    <p><a href="/#/players">← Back to Rankings</a></p>
+  </div>
+  <script>
+    // If accessed with an ID, redirect to player page
+    const params = new URLSearchParams(window.location.search);
+    const playerId = params.get('id');
+    if (playerId) {
+      window.location.replace(`/#/players/${playerId}`);
+    }
+  </script>
+</body>
+</html>
