@@ -9,7 +9,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AuthProvider>
-      <ThemeProvider defaultTheme="system" storageKey="scelo-theme">
+      <ThemeProvider defaultTheme="dark" storageKey="scelo-theme">
         <HashRouter>
           <App />
         </HashRouter>

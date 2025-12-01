@@ -39,15 +39,17 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
   const hasLinks = (showEventLink && event) || match.vod_link
 
   return (
-    <div className="p-4 border rounded-lg space-y-3">
+    <div className="group relative p-4 border border-border/40 rounded-lg space-y-3 bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_15px_rgba(var(--primary-rgb),0.2)] overflow-hidden">
+      <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-primary/0 to-transparent group-hover:via-primary/50 transition-all duration-500" />
+
       {/* Header with Match Number or Links */}
       {(showMatchNumber || (showLinksInHeader && hasLinks)) && (
-        <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center justify-between gap-2 flex-wrap border-b border-white/5 pb-2 mb-2">
           <div className="flex items-center gap-3 text-sm">
             {showLinksInHeader && hasLinks && (
               <>
                 {showEventLink && event && (
-                  <Link className="text-primary hover:underline inline-flex items-center gap-1" to={`/events/${event.id}`}>
+                  <Link className="text-primary hover:text-primary/80 hover:underline inline-flex items-center gap-1 font-heading font-bold tracking-wide transition-colors" to={`/events/${event.id}`}>
                     {event.title}
                   </Link>
                 )}
@@ -56,21 +58,21 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
                     href={match.vod_link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary hover:underline inline-flex items-center gap-1"
+                    className="text-red-500 hover:text-red-400 hover:underline inline-flex items-center gap-1 font-bold transition-colors"
                   >
                     {getVideoIcon(match.vod_link)}
-                    Match Video
+                    Watch
                   </a>
                 )}
               </>
             )}
             {showMatchNumber && (
               <>
-                <div className="text-sm font-medium text-muted-foreground">
+                <div className="text-xs font-heading font-bold uppercase tracking-widest text-muted-foreground">
                   Match {matchNumber}
                 </div>
                 {isCompleted && (
-                  <div className="text-xs font-medium text-muted-foreground px-2 py-1 bg-muted rounded">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-green-500 px-1.5 py-0.5 bg-green-500/10 rounded border border-green-500/20">
                     Completed
                   </div>
                 )}
@@ -82,40 +84,39 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
               href={match.vod_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
+              className="text-red-500 hover:text-red-400 hover:underline inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider transition-colors"
             >
               {getVideoIcon(match.vod_link)}
-              Match Video
+              Watch
             </a>
           )}
         </div>
       )}
 
       {/* Player 1 */}
-      <div className={`flex items-center justify-between ${isCompleted && isP1Winner ? 'bg-green-500/10 -mx-4 px-4 py-2 rounded-lg' : ''}`}>
+      <div className={`relative flex items-center justify-between p-2 rounded-md transition-colors ${isCompleted && isP1Winner ? 'bg-gradient-to-r from-yellow-500/10 to-transparent border-l-2 border-yellow-500' : 'hover:bg-white/5'}`}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <PlayerAvatar
             name={player1.name}
             twitter={player1.twitter}
             size={48}
-            className="h-12 w-12 shrink-0"
+            className={`h-12 w-12 shrink-0 border-2 ${isCompleted && isP1Winner ? 'border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]' : 'border-border'}`}
           />
           <div className="min-w-0">
-            <Link to={`/players/${player1.id}`} className="hover:underline">
-              <div className={`font-semibold flex items-center gap-2 flex-wrap ${isCompleted && isP1Winner ? 'text-green-600 dark:text-green-400' : isCompleted ? 'text-muted-foreground' : ''}`}>
-                {isCompleted && isP1Winner && <span className="text-green-600 dark:text-green-400">✓</span>}
+            <Link to={`/players/${player1.id}`} className="group/player">
+              <div className={`font-heading font-bold text-lg flex items-center gap-2 flex-wrap transition-colors ${isCompleted && isP1Winner ? 'text-yellow-500' : 'text-foreground group-hover/player:text-primary'}`}>
+                {isCompleted && isP1Winner && <span className="text-yellow-500">👑</span>}
                 <span className="truncate">{player1.name}</span>
-                {isCompleted && isP1Winner && <span className="text-xs font-normal uppercase px-1.5 py-0.5 bg-green-600/20 rounded whitespace-nowrap">Winner</span>}
               </div>
             </Link>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs font-mono text-muted-foreground">
               Rating: {player1.rating === null ? 'Unrated' : Math.round(player1.rating)}
             </div>
           </div>
         </div>
         {isCompleted && (
-          <div className="text-sm font-medium shrink-0">
-            <span className={match.rating_change_p1 && match.rating_change_p1 >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+          <div className="text-sm font-bold font-mono shrink-0">
+            <span className={match.rating_change_p1 && match.rating_change_p1 >= 0 ? 'text-green-500' : 'text-red-500'}>
               {match.rating_change_p1 !== null && match.rating_change_p1 !== undefined ? formatRatingChange(match.rating_change_p1) : '—'}
             </span>
           </div>
@@ -126,47 +127,49 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
       {isCompleted ? (
         <button
           onClick={() => openMatch(match.id)}
-          className="flex items-center justify-center gap-2 font-semibold cursor-pointer w-full"
+          className="relative flex items-center justify-center gap-4 font-heading font-black cursor-pointer w-full py-1 hover:scale-105 transition-transform"
         >
-          <span className={isP1Winner ? 'text-green-600 dark:text-green-400 text-2xl' : 'text-muted-foreground text-xl'}>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
+          <span className={isP1Winner ? 'text-yellow-500 text-3xl drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'text-muted-foreground text-2xl'}>
             {match.player1_score ?? '?'}
           </span>
-          <span className="text-muted-foreground">-</span>
-          <span className={!isP1Winner ? 'text-green-600 dark:text-green-400 text-2xl' : 'text-muted-foreground text-xl'}>
+          <span className="text-muted-foreground/50 text-xl">-</span>
+          <span className={!isP1Winner ? 'text-yellow-500 text-3xl drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'text-muted-foreground text-2xl'}>
             {match.player2_score ?? '?'}
           </span>
         </button>
       ) : (
-        <div className="flex items-center justify-center text-muted-foreground font-semibold">
-          VS
+        <div className="flex items-center justify-center py-2">
+          <span className="text-2xl font-heading font-black text-transparent bg-clip-text bg-gradient-to-b from-muted-foreground to-muted-foreground/50 italic pr-1">
+            VS
+          </span>
         </div>
       )}
 
       {/* Player 2 */}
-      <div className={`flex items-center justify-between ${isCompleted && !isP1Winner ? 'bg-green-500/10 -mx-4 px-4 py-2 rounded-lg' : ''}`}>
+      <div className={`relative flex items-center justify-between p-2 rounded-md transition-colors ${isCompleted && !isP1Winner ? 'bg-gradient-to-r from-yellow-500/10 to-transparent border-l-2 border-yellow-500' : 'hover:bg-white/5'}`}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <PlayerAvatar
             name={player2.name}
             twitter={player2.twitter}
             size={48}
-            className="h-12 w-12 shrink-0"
+            className={`h-12 w-12 shrink-0 border-2 ${isCompleted && !isP1Winner ? 'border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]' : 'border-border'}`}
           />
           <div className="min-w-0">
-            <Link to={`/players/${player2.id}`} className="hover:underline">
-              <div className={`font-semibold flex items-center gap-2 flex-wrap ${isCompleted && !isP1Winner ? 'text-green-600 dark:text-green-400' : isCompleted ? 'text-muted-foreground' : ''}`}>
-                {isCompleted && !isP1Winner && <span className="text-green-600 dark:text-green-400">✓</span>}
+            <Link to={`/players/${player2.id}`} className="group/player">
+              <div className={`font-heading font-bold text-lg flex items-center gap-2 flex-wrap transition-colors ${isCompleted && !isP1Winner ? 'text-yellow-500' : 'text-foreground group-hover/player:text-primary'}`}>
+                {isCompleted && !isP1Winner && <span className="text-yellow-500">👑</span>}
                 <span className="truncate">{player2.name}</span>
-                {isCompleted && !isP1Winner && <span className="text-xs font-normal uppercase px-1.5 py-0.5 bg-green-600/20 rounded whitespace-nowrap">Winner</span>}
               </div>
             </Link>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs font-mono text-muted-foreground">
               Rating: {player2.rating === null ? 'Unrated' : Math.round(player2.rating)}
             </div>
           </div>
         </div>
         {isCompleted && (
-          <div className="text-sm font-medium shrink-0">
-            <span className={match.rating_change_p2 && match.rating_change_p2 >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+          <div className="text-sm font-bold font-mono shrink-0">
+            <span className={match.rating_change_p2 && match.rating_change_p2 >= 0 ? 'text-green-500' : 'text-red-500'}>
               {match.rating_change_p2 !== null && match.rating_change_p2 !== undefined ? formatRatingChange(match.rating_change_p2) : '—'}
             </span>
           </div>
@@ -175,9 +178,9 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
 
       {/* Footer with Event Link and VOD Links (only if not shown in header) */}
       {!showLinksInHeader && !showMatchNumber && hasLinks && (
-        <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground border-t pt-2">
+        <div className="flex items-center justify-center gap-4 text-xs font-bold uppercase tracking-wider text-muted-foreground border-t border-white/5 pt-3 mt-2">
           {showEventLink && event && (
-            <Link className="text-primary hover:underline inline-flex items-center gap-1" to={`/events/${event.id}`}>
+            <Link className="text-primary hover:text-primary/80 hover:underline inline-flex items-center gap-1 transition-colors" to={`/events/${event.id}`}>
               Event: {event.title}
             </Link>
           )}
@@ -186,10 +189,10 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
               href={match.vod_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline inline-flex items-center gap-1"
+              className="text-red-500 hover:text-red-400 hover:underline inline-flex items-center gap-1 transition-colors"
             >
               {getVideoIcon(match.vod_link)}
-              Match Video
+              Watch
             </a>
           )}
         </div>

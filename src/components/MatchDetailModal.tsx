@@ -256,68 +256,75 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl bg-card/90 backdrop-blur-xl border-primary/50 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
         <DialogHeader className="sr-only">
           <DialogTitle>Match Details</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-8 py-2">
+        <div className="relative p-6 md:p-10 space-y-8">
+          {/* Background Elements */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-background/50 to-background pointer-events-none" />
+
           {/* Main Match Display - Side by Side Layout */}
-          <div className="grid grid-cols-[1fr_auto_1fr] gap-8 items-start">
+          <div className="relative z-10 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-8 items-center">
             {/* Player 1 Column */}
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-6 order-2 md:order-1">
               {p1 && (
                 <>
                   <Link
-                    className="group text-center"
+                    className="group flex flex-col items-center"
                     to={`/players/${p1.id}`}
                     onClick={() => onOpenChange(false)}
                   >
-                    <PlayerAvatar
-                      name={p1.name}
-                      twitter={p1.twitter}
-                      size={96}
-                      className="h-24 w-24 mx-auto ring-2 ring-border group-hover:ring-primary transition-all"
-                    />
-                    <div className="font-semibold text-lg mt-3 group-hover:text-primary transition-colors">{p1.name}</div>
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-primary/30 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <PlayerAvatar
+                        name={p1.name}
+                        twitter={p1.twitter}
+                        size={120}
+                        className={`h-24 w-24 md:h-32 md:w-32 mx-auto border-4 transition-all duration-300 ${match.winner_id === match.player1_id ? 'border-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.5)]' : 'border-border group-hover:border-primary'}`}
+                      />
+                    </div>
+                    <div className="font-heading font-bold text-2xl mt-4 group-hover:text-primary transition-colors text-center tracking-wide">{p1.name}</div>
                   </Link>
 
                   {/* Player 1 Stats Card */}
-                  <div className={`w-full rounded-lg border-2 p-4 ${match.winner_id === match.player1_id
-                      ? 'border-green-500/50 bg-green-500/5'
-                      : 'border-border'
+                  <div className={`w-full max-w-xs rounded-lg border p-4 backdrop-blur-sm transition-colors ${match.winner_id === match.player1_id
+                    ? 'border-yellow-500/50 bg-yellow-500/5'
+                    : 'border-border/50 bg-card/30'
                     }`}>
                     <div className="text-center space-y-3">
                       <div>
-                        <div className="text-6xl font-bold mb-1" style={{
+                        <div className="text-6xl font-heading font-black mb-1 drop-shadow-lg" style={{
                           color: match.winner_id === match.player1_id
-                            ? 'hsl(var(--chart-2))'
+                            ? '#eab308' // Yellow-500
                             : 'hsl(var(--muted-foreground))'
                         }}>
                           {match.player1_score ?? '?'}
                         </div>
                         {match.winner_id === match.player1_id && (
-                          <div className="text-sm font-medium text-green-600 dark:text-green-400">Winner</div>
+                          <div className="text-sm font-heading font-bold text-yellow-500 uppercase tracking-widest">Victory</div>
                         )}
                       </div>
 
                       {p1RatingChange !== null && (
-                        <div className="pt-3 border-t space-y-2">
-                          <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Rating Change</div>
-                          <div className="inline-flex items-center gap-2 text-xl font-bold">
+                        <div className="pt-3 border-t border-border/30 space-y-2">
+                          <div className="text-xs text-muted-foreground font-heading uppercase tracking-widest">Rating Change</div>
+                          <div className="inline-flex items-center gap-2 text-xl font-bold font-mono">
                             {(p1RatingChange ?? 0) >= 0 ? (
-                              <ArrowUp size={20} className="text-green-600 dark:text-green-400" />
+                              <ArrowUp size={20} className="text-green-500" />
                             ) : (
-                              <ArrowDown size={20} className="text-red-600 dark:text-red-400" />
+                              <ArrowDown size={20} className="text-red-500" />
                             )}
-                            <span className={(p1RatingChange ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                            <span className={(p1RatingChange ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'}>
                               {Math.abs(p1RatingChange ?? 0).toFixed(1)}
                             </span>
                           </div>
                           {p1Ratings && p1Ratings.ratingBefore !== null && p1Ratings.ratingAfter !== null && (
-                            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground font-mono">
                               <span className="font-semibold text-foreground">{Math.round(p1Ratings.ratingBefore)}</span>
-                              <span className={(p1RatingChange ?? 0) >= 0 ? 'text-green-600 dark:text-green-400 text-lg' : 'text-red-600 dark:text-red-400 text-lg'}>
+                              <span className={(p1RatingChange ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'}>
                                 →
                               </span>
                               <span className="font-semibold text-foreground">{Math.round(p1Ratings.ratingAfter)}</span>
@@ -332,64 +339,69 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
             </div>
 
             {/* VS Divider */}
-            <div className="flex items-center justify-center pt-20">
-              <div className="text-3xl font-bold text-muted-foreground">VS</div>
+            <div className="flex flex-col items-center justify-center order-1 md:order-2 py-4 md:py-0">
+              <div className="text-5xl md:text-7xl font-heading font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-700 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] italic pr-2">
+                VS
+              </div>
             </div>
 
             {/* Player 2 Column */}
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-6 order-3">
               {p2 && (
                 <>
                   <Link
-                    className="group text-center"
+                    className="group flex flex-col items-center"
                     to={`/players/${p2.id}`}
                     onClick={() => onOpenChange(false)}
                   >
-                    <PlayerAvatar
-                      name={p2.name}
-                      twitter={p2.twitter}
-                      size={96}
-                      className="h-24 w-24 mx-auto ring-2 ring-border group-hover:ring-primary transition-all"
-                    />
-                    <div className="font-semibold text-lg mt-3 group-hover:text-primary transition-colors">{p2.name}</div>
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-primary/30 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <PlayerAvatar
+                        name={p2.name}
+                        twitter={p2.twitter}
+                        size={120}
+                        className={`h-24 w-24 md:h-32 md:w-32 mx-auto border-4 transition-all duration-300 ${match.winner_id === match.player2_id ? 'border-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.5)]' : 'border-border group-hover:border-primary'}`}
+                      />
+                    </div>
+                    <div className="font-heading font-bold text-2xl mt-4 group-hover:text-primary transition-colors text-center tracking-wide">{p2.name}</div>
                   </Link>
 
                   {/* Player 2 Stats Card */}
-                  <div className={`w-full rounded-lg border-2 p-4 ${match.winner_id === match.player2_id
-                      ? 'border-green-500/50 bg-green-500/5'
-                      : 'border-border'
+                  <div className={`w-full max-w-xs rounded-lg border p-4 backdrop-blur-sm transition-colors ${match.winner_id === match.player2_id
+                    ? 'border-yellow-500/50 bg-yellow-500/5'
+                    : 'border-border/50 bg-card/30'
                     }`}>
                     <div className="text-center space-y-3">
                       <div>
-                        <div className="text-6xl font-bold mb-1" style={{
+                        <div className="text-6xl font-heading font-black mb-1 drop-shadow-lg" style={{
                           color: match.winner_id === match.player2_id
-                            ? 'hsl(var(--chart-2))'
+                            ? '#eab308' // Yellow-500
                             : 'hsl(var(--muted-foreground))'
                         }}>
                           {match.player2_score ?? '?'}
                         </div>
                         {match.winner_id === match.player2_id && (
-                          <div className="text-sm font-medium text-green-600 dark:text-green-400">Winner</div>
+                          <div className="text-sm font-heading font-bold text-yellow-500 uppercase tracking-widest">Victory</div>
                         )}
                       </div>
 
                       {p2RatingChange !== null && (
-                        <div className="pt-3 border-t space-y-2">
-                          <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Rating Change</div>
-                          <div className="inline-flex items-center gap-2 text-xl font-bold">
+                        <div className="pt-3 border-t border-border/30 space-y-2">
+                          <div className="text-xs text-muted-foreground font-heading uppercase tracking-widest">Rating Change</div>
+                          <div className="inline-flex items-center gap-2 text-xl font-bold font-mono">
                             {(p2RatingChange ?? 0) >= 0 ? (
-                              <ArrowUp size={20} className="text-green-600 dark:text-green-400" />
+                              <ArrowUp size={20} className="text-green-500" />
                             ) : (
-                              <ArrowDown size={20} className="text-red-600 dark:text-red-400" />
+                              <ArrowDown size={20} className="text-red-500" />
                             )}
-                            <span className={(p2RatingChange ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                            <span className={(p2RatingChange ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'}>
                               {Math.abs(p2RatingChange ?? 0).toFixed(1)}
                             </span>
                           </div>
                           {p2Ratings && p2Ratings.ratingBefore !== null && p2Ratings.ratingAfter !== null && (
-                            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground font-mono">
                               <span className="font-semibold text-foreground">{Math.round(p2Ratings.ratingBefore)}</span>
-                              <span className={(p2RatingChange ?? 0) >= 0 ? 'text-green-600 dark:text-green-400 text-lg' : 'text-red-600 dark:text-red-400 text-lg'}>
+                              <span className={(p2RatingChange ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'}>
                                 →
                               </span>
                               <span className="font-semibold text-foreground">{Math.round(p2Ratings.ratingAfter)}</span>
@@ -406,19 +418,19 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
           {/* Event and Video Links */}
           {(match.event_id || match.vod_link || seasonName) && (
-            <div className="flex items-center justify-center gap-8 pt-4 border-t flex-wrap">
+            <div className="relative z-10 flex items-center justify-center gap-6 pt-6 border-t border-border/30 flex-wrap">
               {seasonName && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Season:</span>
-                  <span className="font-medium text-base">{seasonName}</span>
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-muted/20 border border-border/30">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-heading">Season</span>
+                  <span className="font-bold text-sm">{seasonName}</span>
                 </div>
               )}
 
               {match.event_id && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Event:</span>
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-muted/20 border border-border/30">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-heading">Event</span>
                   <Link
-                    className="text-primary hover:underline font-medium text-base"
+                    className="text-primary hover:text-primary/80 hover:underline font-bold text-sm transition-colors"
                     to={`/events/${match.event_id}`}
                     onClick={() => onOpenChange(false)}
                   >
@@ -432,18 +444,18 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                   href={match.vod_link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-primary hover:underline font-medium text-base"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white font-heading font-bold text-sm uppercase tracking-wider transition-colors shadow-lg hover:shadow-red-600/20"
                 >
                   {match.vod_link.includes('youtube.com') || match.vod_link.includes('youtu.be') ? (
-                    <Youtube className="h-5 w-5 text-red-600" />
+                    <Youtube className="h-4 w-4" />
                   ) : match.vod_link.includes('twitch.tv') ? (
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" style={{ color: '#9146FF' }}>
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
                     </svg>
                   ) : (
-                    <ExternalLink className="h-5 w-5" />
+                    <ExternalLink className="h-4 w-4" />
                   )}
-                  Watch Video
+                  Watch Battle
                 </a>
               )}
             </div>

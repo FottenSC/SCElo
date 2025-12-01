@@ -264,11 +264,11 @@ export default function EventDashboard() {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="bg-card/50 border-border/50">
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle>Event Dashboard</CardTitle>
+              <CardTitle className="font-heading text-2xl text-primary">Event Dashboard</CardTitle>
               <CardDescription>Register scores for matches within an event</CardDescription>
             </div>
             {selectedEventId && (
@@ -277,6 +277,7 @@ export default function EventDashboard() {
                 variant="outline"
                 size="icon"
                 disabled={refreshing}
+                className="bg-background/50 border-primary/30 hover:bg-primary/20"
               >
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               </Button>
@@ -285,7 +286,7 @@ export default function EventDashboard() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Select Event</Label>
+            <Label className="font-bold uppercase tracking-wider text-xs text-muted-foreground">Select Event</Label>
             <Combobox
               value={selectedEventId}
               onValueChange={setSelectedEventId}
@@ -295,19 +296,20 @@ export default function EventDashboard() {
               }))}
               placeholder="Choose an event"
               searchPlaceholder="Search events..."
+              className="w-full"
             />
           </div>
 
           {selectedEvent && (
-            <div className="p-4 bg-muted rounded-lg">
-              <h3 className="font-semibold mb-2">{selectedEvent.title}</h3>
-              <p className="text-sm text-muted-foreground">
+            <div className="p-4 bg-background/30 rounded-lg border border-border/30">
+              <h3 className="font-heading font-bold text-xl text-primary mb-2">{selectedEvent.title}</h3>
+              <p className="text-sm text-muted-foreground font-mono">
                 {new Date(selectedEvent.event_date).toLocaleString()}
               </p>
               {selectedEvent.description && (
-                <p className="text-sm mt-2">{selectedEvent.description}</p>
+                <p className="text-sm mt-2 italic text-muted-foreground">{selectedEvent.description}</p>
               )}
-              <div className="flex gap-4 mt-3 text-sm">
+              <div className="flex gap-4 mt-3 text-sm font-bold uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                   <span>{completedMatches.length} completed</span>
@@ -326,10 +328,10 @@ export default function EventDashboard() {
         <>
           {/* Upcoming Matches */}
           {upcomingMatches.length > 0 && (
-            <Card>
+            <Card className="bg-card/50 border-border/50">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-orange-500" />
+                <CardTitle className="flex items-center gap-2 font-heading text-xl text-orange-500">
+                  <Clock className="h-5 w-5" />
                   Upcoming Matches
                 </CardTitle>
                 <CardDescription>Click to register scores</CardDescription>
@@ -339,18 +341,18 @@ export default function EventDashboard() {
                   {upcomingMatches.map((match) => (
                     <div
                       key={match.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                      className="flex items-center justify-between p-4 border border-border/40 rounded-lg hover:bg-primary/5 hover:border-primary/30 cursor-pointer transition-all group"
                       onClick={() => openScoreDialog(match)}
                     >
                       <div className="flex items-center gap-4">
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-sm text-muted-foreground font-mono bg-background/50 px-2 py-1 rounded">
                           #{match.match_order || 0}
                         </div>
-                        <div className="font-medium">
-                          {getPlayerName(match.player1_id)} vs {getPlayerName(match.player2_id)}
+                        <div className="font-heading font-bold text-lg group-hover:text-primary transition-colors">
+                          {getPlayerName(match.player1_id)} <span className="text-muted-foreground text-sm mx-1">VS</span> {getPlayerName(match.player2_id)}
                         </div>
                       </div>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" className="font-bold uppercase tracking-wider text-xs bg-background/50 border-primary/30 group-hover:bg-primary group-hover:text-primary-foreground">
                         Register Score
                       </Button>
                     </div>
@@ -362,10 +364,10 @@ export default function EventDashboard() {
 
           {/* Completed Matches */}
           {completedMatches.length > 0 && (
-            <Card>
+            <Card className="bg-card/50 border-border/50">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <CardTitle className="flex items-center gap-2 font-heading text-xl text-green-500">
+                  <CheckCircle2 className="h-5 w-5" />
                   Completed Matches
                 </CardTitle>
                 <CardDescription>Click to edit scores</CardDescription>
@@ -375,38 +377,39 @@ export default function EventDashboard() {
                   {completedMatches.map((match) => (
                     <div
                       key={match.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      className="flex items-center justify-between p-4 border border-border/40 rounded-lg hover:bg-primary/5 hover:border-primary/30 transition-all group"
                     >
                       <div className="flex items-center gap-4 flex-1 cursor-pointer" onClick={() => openScoreDialog(match)}>
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-sm text-muted-foreground font-mono bg-background/50 px-2 py-1 rounded">
                           #{match.match_order || 0}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className={match.winner_id === match.player1_id ? 'font-bold' : ''}>
+                        <div className="flex items-center gap-4 font-heading text-lg">
+                          <span className={`${match.winner_id === match.player1_id ? 'text-primary font-bold drop-shadow-[0_0_5px_rgba(var(--primary-rgb),0.5)]' : 'text-muted-foreground'}`}>
                             {getPlayerName(match.player1_id)}
                           </span>
-                          <span className="text-muted-foreground">
+                          <span className="text-muted-foreground font-mono text-sm bg-background/30 px-2 py-1 rounded border border-border/30">
                             {(match.player1_score ?? '?')} - {(match.player2_score ?? '?')}
                           </span>
-                          <span className={match.winner_id === match.player2_id ? 'font-bold' : ''}>
+                          <span className={`${match.winner_id === match.player2_id ? 'text-primary font-bold drop-shadow-[0_0_5px_rgba(var(--primary-rgb),0.5)]' : 'text-muted-foreground'}`}>
                             {getPlayerName(match.player2_id)}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <Trophy className="h-4 w-4 text-yellow-500" />
-                          <span className="font-medium">{getPlayerName(match.winner_id!)}</span>
+                        <div className="flex items-center gap-2 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20">
+                          <Trophy className="h-3 w-3 text-yellow-500" />
+                          <span className="font-bold text-sm text-yellow-500 uppercase tracking-wider">{getPlayerName(match.winner_id!)}</span>
                         </div>
                         <Button
                           size="sm"
-                          variant="outline"
+                          variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation()
                             handleRollback(match)
                           }}
                           disabled={submitting}
                           title="Rollback match (only if both players have no matches afterwards)"
+                          className="hover:bg-destructive/20 hover:text-destructive"
                         >
                           <Undo2 className="h-4 w-4" />
                         </Button>
@@ -419,8 +422,8 @@ export default function EventDashboard() {
           )}
 
           {matches.length === 0 && (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
+            <Card className="bg-card/50 border-border/50">
+              <CardContent className="py-12 text-center text-muted-foreground italic">
                 No matches found for this event. Create matches in the Match Management section.
               </CardContent>
             </Card>
@@ -429,19 +432,22 @@ export default function EventDashboard() {
       )}
 
       {loading && (
-        <div className="text-center py-8 text-muted-foreground">Loading matches...</div>
+        <div className="text-center py-12 text-muted-foreground">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          Loading matches...
+        </div>
       )}
 
       {/* Score Registration Dialog */}
       <Dialog open={scoreDialogOpen} onOpenChange={setScoreDialogOpen}>
-        <DialogContent>
+        <DialogContent className="bg-card/90 backdrop-blur-xl border-primary/20">
           <DialogHeader>
-            <DialogTitle>Register Match Score</DialogTitle>
+            <DialogTitle className="font-heading text-2xl text-primary">Register Match Score</DialogTitle>
             <DialogDescription>
               {editingMatch && (
-                <>
-                  {getPlayerName(editingMatch.player1_id)} vs {getPlayerName(editingMatch.player2_id)}
-                </>
+                <span className="font-heading font-bold text-lg text-foreground">
+                  {getPlayerName(editingMatch.player1_id)} <span className="text-muted-foreground text-sm mx-1">VS</span> {getPlayerName(editingMatch.player2_id)}
+                </span>
               )}
             </DialogDescription>
           </DialogHeader>
@@ -450,27 +456,29 @@ export default function EventDashboard() {
               <div className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>{getPlayerName(editingMatch.player1_id)} Score *</Label>
+                    <Label className="font-bold uppercase tracking-wider text-xs">{getPlayerName(editingMatch.player1_id)} Score *</Label>
                     <Input
                       type="number"
                       min="0"
                       value={scoreForm.player1_score}
                       onChange={(e) => setScoreForm({ ...scoreForm, player1_score: e.target.value })}
+                      className="bg-background/50 border-primary/30 focus:ring-primary/50 text-center font-mono text-lg font-bold"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{getPlayerName(editingMatch.player2_id)} Score *</Label>
+                    <Label className="font-bold uppercase tracking-wider text-xs">{getPlayerName(editingMatch.player2_id)} Score *</Label>
                     <Input
                       type="number"
                       min="0"
                       value={scoreForm.player2_score}
                       onChange={(e) => setScoreForm({ ...scoreForm, player2_score: e.target.value })}
+                      className="bg-background/50 border-primary/30 focus:ring-primary/50 text-center font-mono text-lg font-bold"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Winner *</Label>
+                  <Label className="font-bold uppercase tracking-wider text-xs">Winner *</Label>
                   <Combobox
                     value={scoreForm.winner_id}
                     onValueChange={(v) => setScoreForm({ ...scoreForm, winner_id: v })}
@@ -480,18 +488,19 @@ export default function EventDashboard() {
                     ]}
                     placeholder="Select winner"
                     searchPlaceholder="Search players..."
+                    className="w-full"
                   />
                 </div>
 
                 {error && (
-                  <div className="text-sm text-destructive">{error}</div>
+                  <div className="text-sm text-destructive font-bold bg-destructive/10 p-2 rounded border border-destructive/20">{error}</div>
                 )}
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setScoreDialogOpen(false)}>
+                <Button type="button" variant="ghost" onClick={() => setScoreDialogOpen(false)} className="font-bold uppercase tracking-wider">
                   Cancel
                 </Button>
-                <Button type="submit" disabled={submitting}>
+                <Button type="submit" disabled={submitting} className="font-heading font-bold uppercase tracking-wider">
                   {submitting ? 'Saving...' : 'Save Score'}
                 </Button>
               </DialogFooter>

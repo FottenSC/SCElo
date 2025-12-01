@@ -217,41 +217,50 @@ WHERE id = '${session.user.id}';`}
   }
 
   return (
-    <div className="container py-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <h1 className="text-4xl font-bold">Admin Dashboard</h1>
+    <div className="container py-8 space-y-8">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-4xl md:text-5xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/80 to-primary/50 drop-shadow-sm">
+          Admin Dashboard
+        </h1>
+        <p className="text-muted-foreground font-body text-lg">
+          Manage the arena and its combatants.
+        </p>
+      </div>
 
-        <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="dashboard">Event Dashboard</TabsTrigger>
-            <TabsTrigger value="events">Events</TabsTrigger>
-            <TabsTrigger value="matches">Matches</TabsTrigger>
-            <TabsTrigger value="players">Players</TabsTrigger>
-            <TabsTrigger value="seasons">Seasons</TabsTrigger>
-            <TabsTrigger value="tools">Tools</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="dashboard" className="space-y-6">
+        <TabsList className="bg-card/40 backdrop-blur-sm border border-border/40 p-1 h-auto flex-wrap justify-start gap-2">
+          <TabsTrigger value="dashboard" className="font-heading font-bold uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">Event Dashboard</TabsTrigger>
+          <TabsTrigger value="events" className="font-heading font-bold uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">Events</TabsTrigger>
+          <TabsTrigger value="matches" className="font-heading font-bold uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">Matches</TabsTrigger>
+          <TabsTrigger value="players" className="font-heading font-bold uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">Players</TabsTrigger>
+          <TabsTrigger value="seasons" className="font-heading font-bold uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">Seasons</TabsTrigger>
+          <TabsTrigger value="tools" className="font-heading font-bold uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">Tools</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="dashboard">
+        <div className="bg-card/30 backdrop-blur-md border border-border/40 rounded-lg p-6 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+
+          <TabsContent value="dashboard" className="m-0">
             <EventDashboard />
           </TabsContent>
 
-          <TabsContent value="events">
+          <TabsContent value="events" className="m-0">
             <EventManagement />
           </TabsContent>
 
-          <TabsContent value="matches">
+          <TabsContent value="matches" className="m-0">
             <MatchManagement />
           </TabsContent>
 
-          <TabsContent value="players">
+          <TabsContent value="players" className="m-0">
             <PlayerManagement />
           </TabsContent>
 
-          <TabsContent value="seasons" className="space-y-6">
+          <TabsContent value="seasons" className="space-y-6 m-0">
             {/* Active Season Card */}
-            <Card>
+            <Card className="bg-card/50 border-border/50">
               <CardHeader>
-                <CardTitle>Active Season</CardTitle>
+                <CardTitle className="font-heading text-2xl text-primary">Active Season</CardTitle>
                 <CardDescription>
                   Current season where matches are being recorded
                 </CardDescription>
@@ -261,24 +270,27 @@ WHERE id = '${session.user.id}';`}
                   <p className="text-sm text-muted-foreground">Loading...</p>
                 ) : activeSeason ? (
                   <div className="space-y-3">
-                    <div className="p-3 bg-secondary rounded-lg">
-                      <p className="text-sm font-semibold">{activeSeason.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Started: {new Date(activeSeason.start_date).toLocaleDateString()}
-                      </p>
+                    <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between">
+                      <div>
+                        <p className="text-lg font-heading font-bold text-primary">{activeSeason.name}</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
+                          Started: {new Date(activeSeason.start_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse" />
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-destructive">No active season found!</p>
+                  <p className="text-sm text-destructive font-bold">No active season found!</p>
                 )}
               </CardContent>
             </Card>
 
             {/* Archive Season Card */}
-            <Card className="border-amber-500/50 bg-amber-500/5">
+            <Card className="border-amber-500/30 bg-amber-500/5">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                <CardTitle className="flex items-center gap-2 font-heading text-xl text-amber-500">
+                  <AlertCircle className="h-5 w-5" />
                   Archive Season & Start New
                 </CardTitle>
                 <CardDescription>
@@ -286,9 +298,9 @@ WHERE id = '${session.user.id}';`}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-                  <p className="text-sm text-amber-600 dark:text-amber-400 font-semibold">⚠️ This will:</p>
-                  <ul className="text-sm text-muted-foreground mt-2 space-y-1 list-disc list-inside">
+                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                  <p className="text-sm text-amber-500 font-bold uppercase tracking-wider mb-2">⚠️ This will:</p>
+                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside font-medium">
                     <li>Create final standings snapshots for all active players</li>
                     <li>Archive the current season permanently</li>
                     <li>Reset all player ratings to NULL (inactive)</li>
@@ -300,21 +312,21 @@ WHERE id = '${session.user.id}';`}
                   onClick={handleArchiveSeason}
                   disabled={archivingInProgress || !activeSeason}
                   size="lg"
-                  className="w-full"
+                  className="w-full font-heading font-bold uppercase tracking-wider bg-amber-600 hover:bg-amber-700 text-white"
                 >
                   {archivingInProgress ? 'Archiving Season...' : 'Archive Season & Start New'}
                 </Button>
 
                 {archiveResult && !archiveResult.success && (
                   <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
-                    <p className="text-destructive font-semibold">Error</p>
+                    <p className="text-destructive font-bold uppercase tracking-wider text-xs">Error</p>
                     <p className="text-sm text-muted-foreground">{archiveResult.error}</p>
                   </div>
                 )}
 
                 {archiveResult && archiveResult.success && (
                   <div className="p-4 bg-green-500/10 border border-green-500 rounded-lg">
-                    <p className="text-green-600 dark:text-green-400 font-semibold">✅ Season Archived!</p>
+                    <p className="text-green-500 font-bold uppercase tracking-wider text-xs">✅ Season Archived!</p>
                     <p className="text-sm text-muted-foreground">
                       Season has been archived and a new active season created.
                     </p>
@@ -324,9 +336,9 @@ WHERE id = '${session.user.id}';`}
             </Card>
 
             {/* Archive History Card */}
-            <Card>
+            <Card className="bg-card/50 border-border/50">
               <CardHeader>
-                <CardTitle>Season History</CardTitle>
+                <CardTitle className="font-heading text-2xl">Season History</CardTitle>
                 <CardDescription>
                   Previously archived seasons. Click "Activate" to restore a season as the current active season.
                 </CardDescription>
@@ -340,16 +352,16 @@ WHERE id = '${session.user.id}';`}
                       .filter(s => s.status === 'archived')
                       .sort((a, b) => b.id - a.id)
                       .map(season => (
-                        <div key={season.id} className="p-3 bg-secondary rounded-lg">
+                        <div key={season.id} className="p-4 bg-background/50 border border-border/40 rounded-lg hover:border-primary/30 transition-colors">
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1">
-                              <p className="font-medium">{season.name}</p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="font-heading font-bold text-lg">{season.name}</p>
+                              <p className="text-xs text-muted-foreground font-mono">
                                 {new Date(season.start_date).toLocaleDateString()}
                                 {season.end_date && ` - ${new Date(season.end_date).toLocaleDateString()}`}
                               </p>
                               {season.description && (
-                                <p className="text-xs text-muted-foreground">{season.description}</p>
+                                <p className="text-xs text-muted-foreground mt-1 italic">{season.description}</p>
                               )}
                             </div>
                             <Button
@@ -357,6 +369,7 @@ WHERE id = '${session.user.id}';`}
                               disabled={activatingInProgress && activatingSeasonId === season.id}
                               size="sm"
                               variant="outline"
+                              className="font-bold uppercase tracking-wider text-xs"
                             >
                               {activatingInProgress && activatingSeasonId === season.id ? 'Activating...' : 'Activate'}
                             </Button>
@@ -365,19 +378,19 @@ WHERE id = '${session.user.id}';`}
                       ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No archived seasons yet</p>
+                  <p className="text-sm text-muted-foreground italic">No archived seasons yet</p>
                 )}
 
                 {activateResult && !activateResult.success && (
                   <div className="mt-4 p-4 bg-destructive/10 border border-destructive rounded-lg">
-                    <p className="text-destructive font-semibold">Error</p>
+                    <p className="text-destructive font-bold uppercase tracking-wider text-xs">Error</p>
                     <p className="text-sm text-muted-foreground">{activateResult.error}</p>
                   </div>
                 )}
 
                 {activateResult && activateResult.success && (
                   <div className="mt-4 p-4 bg-green-500/10 border border-green-500 rounded-lg">
-                    <p className="text-green-600 dark:text-green-400 font-semibold">✅ Season Activated!</p>
+                    <p className="text-green-500 font-bold uppercase tracking-wider text-xs">✅ Season Activated!</p>
                     <p className="text-sm text-muted-foreground">
                       Season has been restored as the active season and player ratings have been restored.
                     </p>
@@ -387,23 +400,23 @@ WHERE id = '${session.user.id}';`}
             </Card>
           </TabsContent>
 
-          <TabsContent value="tools" className="space-y-6">
+          <TabsContent value="tools" className="space-y-6 m-0">
             {/* Calculate Season Ratings Card */}
-            <Card>
+            <Card className="bg-card/50 border-border/50">
               <CardHeader>
-                <CardTitle>Calculate Season Ratings</CardTitle>
+                <CardTitle className="font-heading text-2xl">Calculate Season Ratings</CardTitle>
                 <CardDescription>
                   Calculate ratings for seasons. Select the active season to recalculate current season, or archived seasons to retroactively calculate.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Select Season</label>
+                  <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Select Season</label>
                   <Select value={selectedSeasonForCalc !== null ? selectedSeasonForCalc.toString() : ''} onValueChange={(val) => {
                     const parsed = val ? parseInt(val) : null
                     setSelectedSeasonForCalc(parsed)
                   }}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full bg-background/50 border-primary/30">
                       <SelectValue placeholder="Choose a season..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -429,24 +442,24 @@ WHERE id = '${session.user.id}';`}
                   onClick={() => selectedSeasonForCalc !== null && handleCalculateSeasonRatings(selectedSeasonForCalc)}
                   disabled={selectedSeasonForCalc === null || calcProgress.status === 'running'}
                   size="lg"
-                  className="w-full"
+                  className="w-full font-heading font-bold uppercase tracking-wider"
                 >
                   {calcProgress.status === 'running' ? 'Calculating...' : 'Calculate Season Ratings'}
                 </Button>
 
                 {calcProgress.status === 'running' && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm text-muted-foreground">
+                  <div className="space-y-2 p-4 bg-background/30 rounded-lg border border-border/30">
+                    <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       <span>Processing match {calcProgress.currentMatch}</span>
                       <span>{calcProgress.processedMatches} / {calcProgress.totalMatches}</span>
                     </div>
-                    <div className="w-full bg-secondary rounded-full h-2.5">
+                    <div className="w-full bg-secondary/50 rounded-full h-2.5 overflow-hidden">
                       <div
-                        className="bg-primary h-2.5 rounded-full transition-all duration-300"
+                        className="bg-primary h-2.5 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"
                         style={{ width: `${getCalcProgressPercentage()}%` }}
                       />
                     </div>
-                    <div className="text-center text-sm font-medium">
+                    <div className="text-center text-sm font-bold text-primary">
                       {getCalcProgressPercentage()}%
                     </div>
                   </div>
@@ -454,14 +467,14 @@ WHERE id = '${session.user.id}';`}
 
                 {calcResult && !calcResult.success && (
                   <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
-                    <p className="text-destructive font-semibold">Error</p>
+                    <p className="text-destructive font-bold uppercase tracking-wider text-xs">Error</p>
                     <p className="text-sm text-muted-foreground">{calcResult.error}</p>
                   </div>
                 )}
 
                 {calcResult && calcResult.success && (
                   <div className="p-4 bg-green-500/10 border border-green-500 rounded-lg">
-                    <p className="text-green-600 dark:text-green-400 font-semibold">✅ Success!</p>
+                    <p className="text-green-500 font-bold uppercase tracking-wider text-xs">✅ Success!</p>
                     <p className="text-sm text-muted-foreground">
                       Created {calcResult.eventsCreated} rating events and snapshots for this season.
                     </p>
@@ -470,8 +483,8 @@ WHERE id = '${session.user.id}';`}
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
-      </div>
+        </div>
+      </Tabs>
     </div>
   )
 }

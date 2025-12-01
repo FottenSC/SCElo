@@ -45,7 +45,7 @@ export function RatingProgressionChart({ data, onMatchClick }: RatingProgression
       const close = point.rating
       const high = Math.max(open, close) + 5
       const low = Math.min(open, close) - 5
-      
+
       // Style reset points in grey, others use default colors
       if (point.isReset) {
         candleData.push({
@@ -142,6 +142,15 @@ export function RatingProgressionChart({ data, onMatchClick }: RatingProgression
       tooltip: {
         shared: true,
         useHTML: true,
+        backgroundColor: 'rgba(20, 25, 40, 0.9)',
+        borderColor: '#ca8a04',
+        borderRadius: 4,
+        borderWidth: 1,
+        shadow: true,
+        style: {
+          color: '#e5e7eb',
+          fontFamily: 'Lato, sans-serif',
+        },
         formatter: function (this: any): string {
           if (!this.points || this.points.length === 0) return ''
 
@@ -157,31 +166,32 @@ export function RatingProgressionChart({ data, onMatchClick }: RatingProgression
                 break
               }
             }
-            
+
             const ratingDrop = previousRating - point.rating
-            
-            return `<div class="highcharts-tooltip-custom">
-              <div style="font-weight: bold; color: #4b5563;">🔄 Season Reset</div>
-              <div style="margin-top: 4px; font-size: 12px; color: #374151;">
-                <div>Previous Rating: <b>${previousRating.toFixed(0)}</b></div>
-                <div>Reset to: <b>${point.rating.toFixed(0)}</b></div>
-                ${ratingDrop > 0 ? `<div style="color: #ef4444; font-weight: bold;">Rating Drop: -${ratingDrop.toFixed(0)}</div>` : ''}
-                <div style="margin-top: 4px; font-size: 11px; color: #6b7280;">New season begins at 1500</div>
+
+            return `<div class="p-2 min-w-[200px]">
+              <div style="font-family: 'Cinzel', serif; font-weight: bold; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #4b5563; padding-bottom: 4px; margin-bottom: 4px;">🔄 Season Reset</div>
+              <div style="font-size: 12px; color: #d1d5db;">
+                <div style="display: flex; justify-content: space-between;"><span>Previous Rating:</span> <b>${previousRating.toFixed(0)}</b></div>
+                <div style="display: flex; justify-content: space-between;"><span>Reset to:</span> <b>${point.rating.toFixed(0)}</b></div>
+                ${ratingDrop > 0 ? `<div style="color: #ef4444; font-weight: bold; margin-top: 4px;">Rating Drop: -${ratingDrop.toFixed(0)}</div>` : ''}
+                <div style="margin-top: 6px; font-size: 10px; color: #9ca3af; font-style: italic;">New season begins at 1500</div>
               </div>
             </div>`
           }
 
           const changeColor = point.change >= 0 ? '#22c55e' : '#ef4444'
           const changeSign = point.change >= 0 ? '+' : ''
-          const result = point.won ? '✓ Win' : '✗ Loss'
+          const result = point.won ? 'VICTORY' : 'DEFEAT'
           const resultColor = point.won ? '#22c55e' : '#ef4444'
 
-          return `<div class="highcharts-tooltip-custom">
-            <div style="font-weight: bold; color: ${resultColor};">${result} vs ${point.opponentName}</div>
-            <div style="margin-top: 4px; font-size: 12px;">
-              <div>Rating: <b>${point.rating.toFixed(0)}</b></div>
-              <div style="color: ${changeColor};">Change: <b>${changeSign}${point.change.toFixed(1)}</b></div>
-              ${point.eventTitle ? `<div style="margin-top: 4px; font-size: 11px;">Event: ${point.eventTitle}</div>` : ''}
+          return `<div class="p-2 min-w-[200px]">
+            <div style="font-family: 'Cinzel', serif; font-weight: bold; color: ${resultColor}; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid ${resultColor}40; padding-bottom: 4px; margin-bottom: 4px;">${result}</div>
+            <div style="font-size: 12px; color: #d1d5db;">
+              <div style="margin-bottom: 4px;">vs <span style="font-weight: bold; color: #fff;">${point.opponentName}</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>Rating:</span> <b>${point.rating.toFixed(0)}</b></div>
+              <div style="display: flex; justify-content: space-between; color: ${changeColor};"><span>Change:</span> <b>${changeSign}${point.change.toFixed(1)}</b></div>
+              ${point.eventTitle ? `<div style="margin-top: 6px; font-size: 10px; color: #ca8a04; border-top: 1px solid #ca8a0440; padding-top: 4px;">${point.eventTitle}</div>` : ''}
             </div>
           </div>`
         },

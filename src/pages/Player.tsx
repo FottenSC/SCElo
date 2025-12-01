@@ -301,159 +301,139 @@ export default function Player() {
   }, [selectedSeason])
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Player</h2>
-        <Link className="text-sm text-primary" to="/players">
-          ← Back to Players
-        </Link>
+    <section className="space-y-8">
+      <div className="flex items-center justify-between border-b border-primary/30 pb-4">
+        <div className="flex items-center gap-4">
+          <Link className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-heading uppercase tracking-wider" to="/players">
+            <span>←</span> Back to Roster
+          </Link>
+        </div>
       </div>
-      {playersLoading && <p className="text-muted-foreground">Loading...</p>}
-      {!player && !playersLoading && <p className="text-muted-foreground">Player not found.</p>}
+
+      {playersLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      )}
+
+      {!player && !playersLoading && (
+        <div className="text-center py-12 text-muted-foreground font-heading text-xl">
+          Player not found.
+        </div>
+      )}
+
       {player && (
         <>
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-4">
+          {/* Hero / Player Card */}
+          <div className="relative overflow-hidden rounded-lg border border-primary/50 bg-card/80 backdrop-blur-md shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+              <Trophy size={200} />
+            </div>
+            <div className="absolute top-0 left-0 w-2 h-full bg-primary/60" />
+
+            <div className="p-6 md:p-8 flex flex-col md:flex-row gap-8 items-center md:items-start relative z-10">
+              <div className="shrink-0 relative group">
+                <div className="absolute inset-0 bg-primary/30 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity" />
                 <PlayerAvatar
                   name={player.name}
                   twitter={player.twitter}
-                  size={64}
-                  className="h-16 w-16"
+                  size={128}
+                  className="h-32 w-32 md:h-40 md:w-40 border-4 border-primary/50 shadow-2xl relative z-10"
                 />
+              </div>
+
+              <div className="flex-1 text-center md:text-left space-y-4">
                 <div>
-                  <CardTitle>{player.name}</CardTitle>
+                  <h1 className="text-4xl md:text-5xl font-heading font-black text-primary drop-shadow-[0_0_10px_rgba(234,179,8,0.5)] tracking-wide uppercase">
+                    {player.name}
+                  </h1>
                   {player.twitter && (
                     <a
                       href={`https://twitter.com/${player.twitter.replace('@', '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-muted-foreground hover:text-primary"
+                      className="text-lg text-muted-foreground hover:text-primary transition-colors font-body inline-flex items-center gap-1"
                     >
                       @{player.twitter.replace('@', '')}
                     </a>
                   )}
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <div>
-                <div className="text-muted-foreground text-xs">
-                  <span className="sm:hidden">Rtng</span>
-                  <span className="hidden sm:inline">Rating</span>
-                </div>
-                <div className="font-medium text-lg">{format(player.rating ?? 0, 0)}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground text-xs">RD</div>
-                <div>{format(player.rd ?? 0, 0)}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground text-xs">
-                  <span className="sm:hidden">Vol</span>
-                  <span className="hidden sm:inline">Volatility</span>
-                </div>
-                <div>{(player.volatility ?? 0).toFixed(3)}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground text-xs">
-                  <span className="sm:hidden">W-L</span>
-                  <span className="hidden sm:inline">Record</span>
-                </div>
-                <div>
-                  <span className="font-medium">{stats.w}</span>
-                  <span className="mx-1 text-muted-foreground">-</span>
-                  <span>{stats.l}</span>
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    ({stats.winRate.toFixed(1)}%)
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Additional Stats Card */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {/* Ranking & Peak */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Trophy size={18} className="text-yellow-500" />
-                  Rankings & Achievements
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Current Rank</span>
-                  <span className="font-semibold text-lg">
-                    #{playerRank}
-                    {playerRank && playerRank <= 10 && (
-                      <span className="ml-2 text-xs bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 px-2 py-0.5 rounded">
-                        Top 10
-                      </span>
-                    )}
-                  </span>
-                </div>
-                {player.peak_rating && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Peak Rating</span>
-                    <div className="text-right">
-                      <div className="font-semibold">{format(player.peak_rating, 0)}</div>
-                      {player.peak_rating_date && (
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(player.peak_rating_date).toLocaleDateString()}
-                        </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 pt-4 border-t border-border/30">
+                  <div className="space-y-1">
+                    <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground">Rating</div>
+                    <div className="text-3xl font-bold text-foreground">{format(player.rating ?? 0, 0)}</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground">Rank</div>
+                    <div className="text-3xl font-bold text-foreground">
+                      #{playerRank}
+                      {playerRank && playerRank <= 10 && (
+                        <span className="ml-2 text-xs align-top bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 px-1.5 py-0.5 rounded font-heading">
+                          Top 10
+                        </span>
                       )}
                     </div>
                   </div>
-                )}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Total Matches</span>
-                  <span className="font-semibold">{myMatches.length}</span>
+                  <div className="space-y-1">
+                    <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground">Win Rate</div>
+                    <div className="text-3xl font-bold text-foreground">
+                      {stats.winRate.toFixed(1)}%
+                      <span className="text-sm font-normal text-muted-foreground ml-1">
+                        ({stats.w}W - {stats.l}L)
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground">Peak</div>
+                    <div className="text-3xl font-bold text-foreground">
+                      {format(player.peak_rating ?? 0, 0)}
+                    </div>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Recent Form */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <TrendingUp size={18} className="text-blue-500" />
-                  Recent Form
-                </CardTitle>
-                <CardDescription>Last 10 matches</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {stats.recentForm.length === 0 ? (
-                    <span className="text-sm text-muted-foreground">No recent matches</span>
-                  ) : (
-                    stats.recentForm.map((result, i) => (
+            <div className="px-6 pb-6 md:px-8 md:pb-8 relative z-10">
+              <div className="border-t border-border/30 pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground">Recent Form</div>
+                  <div className="text-xs text-muted-foreground">Last 10 matches</div>
+                </div>
+
+                {stats.recentForm.length === 0 ? (
+                  <div className="flex items-center justify-center py-8 bg-background/40 rounded-lg border border-border/50">
+                    <span className="text-sm text-muted-foreground italic">No recent matches recorded.</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-5 md:grid-cols-10 gap-2 md:gap-3">
+                    {stats.recentForm.map((result, i) => (
                       <div
                         key={i}
-                        className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold ${result === 'W'
-                          ? 'bg-green-500/20 text-green-600 dark:text-green-400'
-                          : 'bg-red-500/20 text-red-600 dark:text-red-400'
+                        className={`aspect-square rounded-lg border-2 flex flex-col items-center justify-center font-bold shadow-lg transition-all hover:scale-105 hover:shadow-xl ${result === 'W'
+                          ? 'bg-green-500/20 border-green-500/60 text-green-400'
+                          : 'bg-red-500/20 border-red-500/60 text-red-400'
                           }`}
                       >
-                        {result}
+                        <div className="text-xl md:text-2xl">{result}</div>
+                        <div className="text-[9px] md:text-[10px] text-muted-foreground mt-0.5 md:mt-1">#{stats.recentForm.length - i}</div>
                       </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Rating Progression */}
           {ratingHistory.length > 0 && (
-            <Card>
+            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <TrendingUp size={18} className="text-purple-500" />
-                  Rating Progression
+                <CardTitle className="flex items-center gap-2 font-heading uppercase tracking-wider text-lg">
+                  <TrendingUp size={20} className="text-primary" />
+                  Rating History
                 </CardTitle>
-                <CardDescription>All {ratingHistory.length} matches</CardDescription>
               </CardHeader>
               <CardContent>
                 <RatingProgressionChart
@@ -464,11 +444,15 @@ export default function Player() {
             </Card>
           )}
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <CardTitle>Recent Matches</CardTitle>
-                <div className="w-full sm:w-64">
+          {/* Battle Log - Full Width */}
+          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+            <CardHeader className="border-b border-border/30 pb-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <CardTitle className="font-heading uppercase tracking-wider text-lg flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full" />
+                  Battle Log
+                </CardTitle>
+                <div className="w-full md:w-64">
                   <Combobox
                     value={selectedSeason === null ? 'all' : String(selectedSeason)}
                     onValueChange={(val) => {
@@ -491,114 +475,96 @@ export default function Player() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-left text-muted-foreground">
-                    <tr className="border-b">
-                      <th className="py-2 pr-2 w-8"></th>
-                      <th className="py-2 pr-4">
-                        <span className="sm:hidden">Opp</span>
-                        <span className="hidden sm:inline">Opponent</span>
-                      </th>
-                      <th className="py-2 pr-4">
-                        <span className="sm:hidden">Score</span>
-                        <span className="hidden sm:inline">Score</span>
-                      </th>
-                      <th className="py-2 pr-4">
-                        <span className="sm:hidden">Δ</span>
-                        <span className="hidden sm:inline">Change</span>
-                      </th>
-                      <th className="py-2 pr-4">
-                        <span className="sm:hidden">Evt</span>
-                        <span className="hidden sm:inline">Event</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedMatches.map((m) => {
-                      const oppId = m.player1_id === playerId ? m.player2_id : m.player1_id
-                      const opp = players.find((p) => p.id === oppId)
-                      const won = m.winner_id === playerId
-                      const ratingDelta = m.player1_id === playerId ? m.rating_change_p1 : m.rating_change_p2
-                      const event = m.event_id ? events.find(e => e.id === m.event_id) : null
-                      const playerScore = m.player1_id === playerId ? (m.player1_score ?? '?') : (m.player2_score ?? '?')
-                      const oppScore = m.player1_id === playerId ? (m.player2_score ?? '?') : (m.player1_score ?? '?')
-                      return (
-                        <tr className="border-b last:border-0" key={m.id}>
-                          <td className="py-2 pr-2 text-muted-foreground">
-                            <button onClick={() => openMatch(m.id)} title="Open match" className="inline-flex items-center hover:text-primary">
-                              <LinkIcon size={16} />
-                            </button>
-                          </td>
-                          <td className="py-2 pr-4">
+            <CardContent className="p-0">
+              <div className="divide-y divide-border/30">
+                {paginatedMatches.map((m) => {
+                  const oppId = m.player1_id === playerId ? m.player2_id : m.player1_id
+                  const opp = players.find((p) => p.id === oppId)
+                  const won = m.winner_id === playerId
+                  const ratingDelta = m.player1_id === playerId ? m.rating_change_p1 : m.rating_change_p2
+                  const event = m.event_id ? events.find(e => e.id === m.event_id) : null
+                  const playerScore = m.player1_id === playerId ? (m.player1_score ?? '?') : (m.player2_score ?? '?')
+                  const oppScore = m.player1_id === playerId ? (m.player2_score ?? '?') : (m.player1_score ?? '?')
+
+                  return (
+                    <div key={m.id} className="p-4 hover:bg-muted/20 transition-colors group">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-bold uppercase px-1.5 py-0.5 rounded border ${won ? 'bg-green-500/10 text-green-500 border-green-500/30' : 'bg-red-500/10 text-red-500 border-red-500/30'}`}>
+                          {won ? 'Victory' : 'Defeat'}
+                        </span>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {event ? event.title : 'Match #' + m.id}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {opp ? (
+                            <Link to={`/players/${oppId}`} className="shrink-0 relative">
+                              <PlayerAvatar
+                                name={opp.name}
+                                twitter={opp.twitter}
+                                size={40}
+                                className="h-10 w-10 border border-border group-hover:border-primary transition-colors"
+                              />
+                            </Link>
+                          ) : (
+                            <div className="h-10 w-10 bg-muted rounded-full" />
+                          )}
+                          <div className="min-w-0">
+                            <div className="text-xs text-muted-foreground uppercase tracking-wider">VS</div>
                             {opp ? (
-                              <Link
-                                className="flex items-center gap-2 text-primary hover:underline min-w-0"
-                                to={`/players/${oppId}`}
-                              >
-                                <PlayerAvatar
-                                  name={opp.name}
-                                  twitter={opp.twitter}
-                                  size={24}
-                                  className="h-6 w-6 flex-shrink-0"
-                                />
-                                <span className="truncate">{opp.name}</span>
+                              <Link to={`/players/${oppId}`} className="font-heading font-bold text-sm truncate hover:text-primary block">
+                                {opp.name}
                               </Link>
                             ) : (
-                              <span className="text-muted-foreground">Unknown Player</span>
+                              <span className="text-sm text-muted-foreground">Unknown</span>
                             )}
-                          </td>
-                          <td className="py-2 pr-4">
-                            <span className={`font-medium ${won ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                              {playerScore}
-                            </span>
-                            <span className="mx-1 text-muted-foreground">-</span>
-                            <span className="text-muted-foreground">{oppScore}</span>
-                          </td>
-                          <td className="py-2 pr-4 font-medium">
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <div className="font-heading font-black text-xl">
+                            <span className={won ? 'text-green-500' : 'text-muted-foreground'}>{playerScore}</span>
+                            <span className="text-muted-foreground mx-1">-</span>
+                            <span className={!won ? 'text-green-500' : 'text-muted-foreground'}>{oppScore}</span>
+                          </div>
+                          <div className="text-xs font-bold">
                             {ratingDelta !== null && ratingDelta !== undefined ? (
-                              <span className="inline-flex items-center gap-1">
-                                {ratingDelta >= 0 ? (
-                                  <ArrowUp size={14} className="text-green-600 dark:text-green-400" />
-                                ) : (
-                                  <ArrowDown size={14} className="text-red-600 dark:text-red-400" />
-                                )}
-                                <span className={ratingDelta >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                                  {Math.abs(ratingDelta).toFixed(1)}
-                                </span>
+                              <span className={ratingDelta >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                {ratingDelta > 0 ? '+' : ''}{ratingDelta.toFixed(1)}
                               </span>
                             ) : (
-                              <span className="text-muted-foreground">—</span>
+                              <span className="text-muted-foreground">-</span>
                             )}
-                          </td>
-                          <td className="py-2 pr-4">
-                            {event ? (
-                              <Link className="text-primary hover:underline" to={`/events/${event.id}`}>
-                                {event.title}
-                              </Link>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => openMatch(m.id)}
+                        className="w-full mt-3 text-xs text-center py-1.5 border border-border/50 rounded hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-colors uppercase tracking-wider font-bold opacity-0 group-hover:opacity-100"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
+
+              {seasonFilteredMatches.length > ITEMS_PER_PAGE && (
+                <div className="p-4 border-t border-border/30">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    totalItems={seasonFilteredMatches.length}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
-
-          {seasonFilteredMatches.length > ITEMS_PER_PAGE && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              itemsPerPage={ITEMS_PER_PAGE}
-              totalItems={seasonFilteredMatches.length}
-            />
-          )}
         </>
       )}
     </section>

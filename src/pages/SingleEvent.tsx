@@ -21,19 +21,19 @@ export default function SingleEvent() {
 
   useEffect(() => {
     let active = true
-    ;(async () => {
-      const [p, e, m] = await Promise.all([
-        fetchPlayers(),
-        fetchEvents(),
-        fetchMatches()
-      ])
-      if (!active) return
-      setPlayers(p)
-      const foundEvent = e.find(ev => ev.id === Number(id))
-      setEvent(foundEvent || null)
-      setMatches(m.filter(match => match.event_id === Number(id)))
-      setLoading(false)
-    })()
+      ; (async () => {
+        const [p, e, m] = await Promise.all([
+          fetchPlayers(),
+          fetchEvents(),
+          fetchMatches()
+        ])
+        if (!active) return
+        setPlayers(p)
+        const foundEvent = e.find(ev => ev.id === Number(id))
+        setEvent(foundEvent || null)
+        setMatches(m.filter(match => match.event_id === Number(id)))
+        setLoading(false)
+      })()
     return () => {
       active = false
     }
@@ -89,23 +89,26 @@ export default function SingleEvent() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Link to="/events">
-          <Button variant="outline" size="sm">← Back to Events</Button>
+          <Button variant="ghost" size="sm" className="hover:bg-primary/10 hover:text-primary transition-colors font-heading uppercase tracking-wider font-bold">
+            ← Back to Events
+          </Button>
         </Link>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
+      <Card className="bg-card/80 backdrop-blur-md border-border/60 shadow-lg overflow-hidden relative">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+        <CardHeader className="border-b border-border/30 bg-muted/20 relative z-10">
+          <div className="flex flex-col md:flex-row items-start justify-between gap-4">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-3 font-heading text-3xl font-bold tracking-wide text-primary drop-shadow-md">
                 {event.title}
                 {isPastEvent && (
-                  <span className="text-xs font-normal text-muted-foreground px-2 py-1 bg-muted rounded">
+                  <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-2 py-1 bg-muted/50 rounded border border-border/50">
                     Past Event
                   </span>
                 )}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="font-body text-lg mt-1">
                 {new Date(event.event_date).toLocaleString('en-US', {
                   weekday: 'long',
                   year: 'numeric',
@@ -116,18 +119,20 @@ export default function SingleEvent() {
                 })}
               </CardDescription>
               {event.description && (
-                <p className="text-sm text-muted-foreground mt-2">{event.description}</p>
+                <p className="text-sm text-muted-foreground mt-4 max-w-2xl leading-relaxed border-l-2 border-primary/30 pl-4 italic">
+                  {event.description}
+                </p>
               )}
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
               {event.stream_url && (
                 <a
                   href={event.stream_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm font-medium text-center"
+                  className="px-6 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/25 font-heading font-bold uppercase tracking-wider text-sm text-center flex items-center justify-center gap-2"
                 >
-                  {isPastEvent ? 'Stream VOD' : 'Watch Stream'}
+                  <span className="text-lg">📺</span> {isPastEvent ? 'Stream VOD' : 'Watch Stream'}
                 </a>
               )}
               {event.vod_link && (
@@ -135,25 +140,27 @@ export default function SingleEvent() {
                   href={event.vod_link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 transition-colors text-sm font-medium text-center"
+                  className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-all shadow-lg hover:shadow-red-600/25 font-heading font-bold uppercase tracking-wider text-sm text-center flex items-center justify-center gap-2"
                 >
-                  Event VOD
+                  <span className="text-lg">▶️</span> Event VOD
                 </a>
               )}
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6 relative z-10">
           {matchesWithPlayers.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No matches scheduled for this event yet.</p>
+            <div className="text-center py-12 border-2 border-dashed border-border/30 rounded-lg bg-card/30">
+              <p className="text-muted-foreground font-heading uppercase tracking-wider">No matches scheduled for this event yet.</p>
+            </div>
           ) : (
             <div className="space-y-4">
               {matchesWithPlayers.map((match, idx) => {
                 const { player1, player2 } = match
                 if (!player1 || !player2) {
                   return (
-                    <div key={match.id} className="p-4 border rounded-lg">
-                      <p className="text-muted-foreground">
+                    <div key={match.id} className="p-4 border border-border/40 rounded-lg bg-card/30 backdrop-blur-sm">
+                      <p className="text-muted-foreground italic">
                         Match {idx + 1}: Player data not found
                       </p>
                     </div>
@@ -176,6 +183,10 @@ export default function SingleEvent() {
             </div>
           )}
         </CardContent>
+
+        {/* Background Decorative Elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
       </Card>
     </div>
   )

@@ -25,8 +25,16 @@ function getSystemPreference(): 'light' | 'dark' {
 function applyTheme(theme: Theme) {
   const root = document.documentElement
   const resolved = theme === 'system' ? getSystemPreference() : theme
-  if (resolved === 'dark') root.classList.add('dark')
-  else root.classList.remove('dark')
+
+  // Remove both classes first
+  root.classList.remove('light', 'dark')
+
+  // Add the appropriate class
+  if (resolved === 'dark') {
+    root.classList.add('dark')
+  } else {
+    root.classList.add('light')
+  }
 }
 
 export function ThemeProvider({
@@ -45,7 +53,7 @@ export function ThemeProvider({
     applyTheme(theme)
     try {
       window.localStorage.setItem(storageKey, theme)
-    } catch {}
+    } catch { }
   }, [theme, storageKey])
 
   // React to system changes when using system theme

@@ -395,12 +395,15 @@ export default function MatchManagement() {
     : matches.filter(m => m.event_id === parseInt(eventFilter))
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="bg-card/80 backdrop-blur-md border-border/60 shadow-lg overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+      <CardHeader className="border-b border-border/30 bg-muted/20">
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle>Match Management</CardTitle>
-            <CardDescription>Create, edit, and delete matches</CardDescription>
+            <CardTitle className="font-heading uppercase tracking-widest text-xl flex items-center gap-2">
+              <span className="text-primary">⚔️</span> Match Management
+            </CardTitle>
+            <CardDescription className="font-body">Create, edit, and delete matches</CardDescription>
           </div>
           <div className="flex gap-2">
             <Button
@@ -408,20 +411,21 @@ export default function MatchManagement() {
               variant="outline"
               size="icon"
               disabled={refreshing}
+              className="border-primary/30 hover:bg-primary/10 hover:text-primary transition-colors"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             </Button>
-            <Button onClick={openCreateDialog}>
+            <Button onClick={openCreateDialog} className="bg-primary text-primary-foreground hover:bg-primary/90 font-heading uppercase tracking-wider font-bold">
               <Plus className="h-4 w-4 mr-2" />
               New Match
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex gap-2 flex-wrap">
+      <CardContent className="space-y-6 p-6">
+        <div className="flex gap-4 flex-wrap bg-card/50 p-4 rounded-lg border border-border/30">
           <Select value={selectedSeason?.toString() ?? ''} onValueChange={(val) => setSelectedSeason(val === '0' ? 0 : parseInt(val, 10))}>
-            <SelectTrigger className="w-full sm:w-64">
+            <SelectTrigger className="w-full sm:w-64 bg-background/50 border-primary/30 focus:ring-primary/50">
               <SelectValue placeholder="Select a season" />
             </SelectTrigger>
             <SelectContent>
@@ -458,77 +462,90 @@ export default function MatchManagement() {
         </div>
 
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Player 1</TableHead>
-                <TableHead>Player 2</TableHead>
-                <TableHead>Score</TableHead>
-                <TableHead>Winner</TableHead>
-                <TableHead>Event</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredMatches.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    No matches found
-                  </TableCell>
+          <div className="rounded-md border border-border/30 overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow className="hover:bg-transparent border-b border-border/30">
+                  <TableHead className="font-heading uppercase tracking-wider text-xs font-bold text-muted-foreground">Player 1</TableHead>
+                  <TableHead className="font-heading uppercase tracking-wider text-xs font-bold text-muted-foreground">Player 2</TableHead>
+                  <TableHead className="font-heading uppercase tracking-wider text-xs font-bold text-muted-foreground">Score</TableHead>
+                  <TableHead className="font-heading uppercase tracking-wider text-xs font-bold text-muted-foreground">Winner</TableHead>
+                  <TableHead className="font-heading uppercase tracking-wider text-xs font-bold text-muted-foreground">Event</TableHead>
+                  <TableHead className="text-right font-heading uppercase tracking-wider text-xs font-bold text-muted-foreground">Actions</TableHead>
                 </TableRow>
-              ) : (
-                filteredMatches.map((match) => (
-                  <TableRow key={match.id}>
-                    <TableCell className="font-medium">{getPlayerName(match.player1_id)}</TableCell>
-                    <TableCell className="font-medium">{getPlayerName(match.player2_id)}</TableCell>
-                    <TableCell>
-                      {(match.player1_score ?? '?')} - {(match.player2_score ?? '?')}
-                    </TableCell>
-                    <TableCell>
-                      {match.winner_id ? getPlayerName(match.winner_id) : <span className="text-muted-foreground">Upcoming</span>}
-                    </TableCell>
-                    <TableCell>{getEventName(match.event_id)}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(match)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      {match.winner_id && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRollback(match)}
-                          disabled={submitting}
-                          title="Rollback match (only if both players have no matches afterwards)"
-                        >
-                          <Undo2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(match)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+              </TableHeader>
+              <TableBody>
+                {filteredMatches.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8 italic">
+                      No matches found
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  filteredMatches.map((match) => (
+                    <TableRow key={match.id} className="hover:bg-primary/5 transition-colors border-b border-border/20 last:border-0">
+                      <TableCell className="font-medium">{getPlayerName(match.player1_id)}</TableCell>
+                      <TableCell className="font-medium">{getPlayerName(match.player2_id)}</TableCell>
+                      <TableCell className="font-mono">
+                        {(match.player1_score ?? '?')} - {(match.player2_score ?? '?')}
+                      </TableCell>
+                      <TableCell>
+                        {match.winner_id ? (
+                          <span className="text-green-500 font-bold">{getPlayerName(match.winner_id)}</span>
+                        ) : (
+                          <span className="text-muted-foreground italic">Upcoming</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{getEventName(match.event_id)}</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(match)}
+                          className="hover:text-primary hover:bg-primary/10"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        {match.winner_id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRollback(match)}
+                            disabled={submitting}
+                            title="Rollback match"
+                            className="hover:text-yellow-500 hover:bg-yellow-500/10"
+                          >
+                            <Undo2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(match)}
+                          className="hover:text-red-500 hover:bg-red-500/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl bg-card/95 backdrop-blur-xl border-primary/50">
           <DialogHeader>
-            <DialogTitle>{editingMatch ? 'Edit Match' : 'Create Match'}</DialogTitle>
+            <DialogTitle className="font-heading uppercase tracking-widest text-xl text-primary">
+              {editingMatch ? 'Edit Battle' : 'New Battle'}
+            </DialogTitle>
             <DialogDescription>
               {editingMatch ? 'Update match information' : 'Add a new match to the system'}
             </DialogDescription>
@@ -537,7 +554,7 @@ export default function MatchManagement() {
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="player1_id">Player 1 *</Label>
+                  <Label htmlFor="player1_id" className="font-heading uppercase text-xs tracking-wider">Player 1 *</Label>
                   <Combobox
                     value={formData.player1_id}
                     onValueChange={(v) => setFormData({ ...formData, player1_id: v })}
@@ -550,7 +567,7 @@ export default function MatchManagement() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="player2_id">Player 2 *</Label>
+                  <Label htmlFor="player2_id" className="font-heading uppercase text-xs tracking-wider">Player 2 *</Label>
                   <Combobox
                     value={formData.player2_id}
                     onValueChange={(v) => setFormData({ ...formData, player2_id: v })}
@@ -566,7 +583,7 @@ export default function MatchManagement() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="player1_score">Player 1 Score</Label>
+                  <Label htmlFor="player1_score" className="font-heading uppercase text-xs tracking-wider">Player 1 Score</Label>
                   <Input
                     id="player1_score"
                     type="number"
@@ -574,10 +591,11 @@ export default function MatchManagement() {
                     value={formData.player1_score}
                     onChange={(e) => setFormData({ ...formData, player1_score: e.target.value })}
                     placeholder="Leave empty for upcoming"
+                    className="bg-background/50 border-primary/30 focus:ring-primary/50"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="player2_score">Player 2 Score</Label>
+                  <Label htmlFor="player2_score" className="font-heading uppercase text-xs tracking-wider">Player 2 Score</Label>
                   <Input
                     id="player2_score"
                     type="number"
@@ -585,12 +603,13 @@ export default function MatchManagement() {
                     value={formData.player2_score}
                     onChange={(e) => setFormData({ ...formData, player2_score: e.target.value })}
                     placeholder="Leave empty for upcoming"
+                    className="bg-background/50 border-primary/30 focus:ring-primary/50"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="winner_id">Winner (leave empty for upcoming match)</Label>
+                <Label htmlFor="winner_id" className="font-heading uppercase text-xs tracking-wider">Winner (leave empty for upcoming match)</Label>
                 <Combobox
                   value={formData.winner_id}
                   onValueChange={(v) => setFormData({ ...formData, winner_id: v })}
@@ -612,7 +631,7 @@ export default function MatchManagement() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="event_id">Event</Label>
+                  <Label htmlFor="event_id" className="font-heading uppercase text-xs tracking-wider">Event</Label>
                   <Combobox
                     value={formData.event_id}
                     onValueChange={(v) => setFormData({ ...formData, event_id: v })}
@@ -628,37 +647,39 @@ export default function MatchManagement() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="match_order">Match Order</Label>
+                  <Label htmlFor="match_order" className="font-heading uppercase text-xs tracking-wider">Match Order</Label>
                   <Input
                     id="match_order"
                     type="number"
                     min="0"
                     value={formData.match_order}
                     onChange={(e) => setFormData({ ...formData, match_order: e.target.value })}
+                    className="bg-background/50 border-primary/30 focus:ring-primary/50"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="vod_link">VOD Link</Label>
+                <Label htmlFor="vod_link" className="font-heading uppercase text-xs tracking-wider">VOD Link</Label>
                 <Input
                   id="vod_link"
                   type="url"
                   value={formData.vod_link}
                   onChange={(e) => setFormData({ ...formData, vod_link: e.target.value })}
                   placeholder="https://youtube.com/..."
+                  className="bg-background/50 border-primary/30 focus:ring-primary/50"
                 />
               </div>
 
               {error && (
-                <div className="text-sm text-destructive">{error}</div>
+                <div className="text-sm text-destructive font-bold">{error}</div>
               )}
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+              <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting}>
+              <Button type="submit" disabled={submitting} className="bg-primary text-primary-foreground hover:bg-primary/90 font-heading uppercase tracking-wider font-bold">
                 {submitting ? 'Saving...' : editingMatch ? 'Update' : 'Create'}
               </Button>
             </DialogFooter>

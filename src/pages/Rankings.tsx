@@ -223,16 +223,12 @@ export default function Rankings() {
     return sortedPlayers.slice(start, end)
   }, [sortedPlayers, currentPage])
 
-  // Calculate display rank based on current sort (for display purposes)
+  // Calculate display rank - always show true rating-based rank
   const getDisplayRank = (playerIndex: number) => {
-    // If sorted by rating in desc order (default), show the player's true ranking
-    if (sortBy === 'rating' && sortDir === 'desc') {
-      const player = paginatedPlayers[playerIndex]
-      if (!player) return 0
-      return playerRankings.get(player.id) ?? 0
-    }
-    // Otherwise, show sequential numbers based on current sort
-    return (currentPage - 1) * ITEMS_PER_PAGE + playerIndex + 1
+    const player = paginatedPlayers[playerIndex]
+    if (!player) return 0
+    // Always return the player's true rating-based rank
+    return playerRankings.get(player.id) ?? 0
   }
 
   // Reset to page 1 if current page is out of bounds
@@ -241,127 +237,173 @@ export default function Rankings() {
   }
 
   return (
-    <section className="space-y-4">
-      <h2 className="text-xl font-semibold">Rankings</h2>
+    <section className="space-y-8">
+      <div className="flex items-center justify-between border-b border-primary/30 pb-4">
+        <h1 className="text-4xl font-heading font-bold text-primary drop-shadow-[0_0_10px_rgba(234,179,8,0.3)] uppercase tracking-widest">
+          Leaderboard
+        </h1>
+        <div className="h-1 w-24 bg-primary/50 rounded-full" />
+      </div>
 
-      {loading && <p className="text-muted-foreground">Loading rankings...</p>}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      )}
 
       {error && (
-        <div className="text-red-500 text-sm">
+        <div className="text-destructive text-center py-8 font-heading">
           Error loading data: {error}
         </div>
       )}
 
       {!loading && !error && (
         <>
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={selectedSeason === null ? 'all' : selectedSeason.toString()} onValueChange={(val) => setSelectedSeason(val === 'all' ? null : parseInt(val, 10))}>
-              <SelectTrigger className="w-full sm:w-64">
-                <SelectValue placeholder="Select a season" />
-              </SelectTrigger>
-              <SelectContent>
-                {/* All seasons option */}
-                <SelectItem value="all">
-                  All seasons
-                </SelectItem>
-                {/* Show active season */}
-                {seasons.filter(s => s.status === 'active').map(season => (
-                  <SelectItem key={season.id} value={season.id.toString()}>
-                    {season.name}
+          <div className="flex flex-col md:flex-row items-center gap-4 bg-card/50 p-4 rounded-lg border border-border/30 backdrop-blur-sm">
+            <div className="w-full md:w-auto flex-1">
+              <Select value={selectedSeason === null ? 'all' : selectedSeason.toString()} onValueChange={(val) => setSelectedSeason(val === 'all' ? null : parseInt(val, 10))}>
+                <SelectTrigger className="w-full bg-background/50 border-primary/30 focus:ring-primary/50">
+                  <SelectValue placeholder="Select a season" />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* All seasons option */}
+                  <SelectItem value="all">
+                    All seasons
                   </SelectItem>
-                ))}
-                {/* Then show archived seasons from oldest to newest */}
-                {seasons.filter(s => s.status === 'archived').sort((a, b) => a.id - b.id).map(season => (
-                  <SelectItem key={season.id} value={season.id.toString()}>
-                    {season.name} (Archived)
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  {/* Show active season */}
+                  {seasons.filter(s => s.status === 'active').map(season => (
+                    <SelectItem key={season.id} value={season.id.toString()}>
+                      {season.name}
+                    </SelectItem>
+                  ))}
+                  {/* Then show archived seasons from oldest to newest */}
+                  {seasons.filter(s => s.status === 'archived').sort((a, b) => a.id - b.id).map(season => (
+                    <SelectItem key={season.id} value={season.id.toString()}>
+                      {season.name} (Archived)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Input
-              placeholder="Search player…"
-              value={search}
-              onChange={(e) => { setCurrentPage(1); setSearch(e.target.value) }}
-              className="w-full sm:w-56"
-            />
+            <div className="w-full md:w-auto flex-1">
+              <Input
+                placeholder="Search warrior…"
+                value={search}
+                onChange={(e) => { setCurrentPage(1); setSearch(e.target.value) }}
+                className="w-full bg-background/50 border-primary/30 focus:ring-primary/50"
+              />
+            </div>
           </div>
 
-          {seasonLoading && <p className="text-muted-foreground">Loading season data...</p>}
+          {seasonLoading && <p className="text-muted-foreground text-center italic">Loading season data...</p>}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Current Ratings</CardTitle>
+          <Card className="bg-card/80 backdrop-blur-md border-border/60 shadow-lg overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            <CardHeader className="border-b border-border/30 bg-muted/20">
+              <CardTitle className="font-heading uppercase tracking-widest text-lg flex items-center gap-2">
+                <span className="text-primary">⚔️</span> Current Standings
+              </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="text-left text-muted-foreground">
-                    <tr className="border-b">
-                      <th className="py-2 pr-4"><span className="sm:hidden">#</span><span className="hidden sm:inline">#</span></th>
-                      <th className="py-2 pr-4">
-                        <button className="inline-flex items-center gap-1 hover:text-primary" onClick={() => toggleSort('name')}>
+                  <thead className="text-left text-muted-foreground bg-muted/30 font-heading uppercase tracking-wider text-xs">
+                    <tr>
+                      <th className="py-3 px-4 w-20 text-center">Rank</th>
+                      <th className="py-3 px-4">
+                        <button className="inline-flex items-center gap-1 hover:text-primary transition-colors" onClick={() => toggleSort('name')}>
+                          <span className="hidden sm:inline">Warrior</span>
                           <span className="sm:hidden">Name</span>
-                          <span className="hidden sm:inline">Player</span>
-                          {sortBy === 'name' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} />}
+                          {sortBy === 'name' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} className="opacity-50" />}
                         </button>
                       </th>
-                      <th className="py-2 pr-4">
-                        <button className="inline-flex items-center gap-1 hover:text-primary" onClick={() => toggleSort('rating')}>
-                          <span className="sm:hidden">Rtng</span>
+                      <th className="py-3 px-4 text-right">
+                        <button className="inline-flex items-center gap-1 hover:text-primary transition-colors ml-auto" onClick={() => toggleSort('rating')}>
                           <span className="hidden sm:inline">Rating</span>
-                          {sortBy === 'rating' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} />}
+                          <span className="sm:hidden">Rtng</span>
+                          {sortBy === 'rating' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} className="opacity-50" />}
                         </button>
                       </th>
-                      <th className="py-2 pr-4 hidden sm:table-cell">
+                      <th className="py-3 px-4 text-right hidden sm:table-cell">
                         <button
-                          className="inline-flex items-center gap-1 hover:text-primary"
+                          className="inline-flex items-center gap-1 hover:text-primary transition-colors ml-auto"
                           onClick={() => toggleSort('rd')}
-                          title="Rating Deviation: measures the uncertainty in a player's rating. Lower = more certain; it decreases with play and increases with inactivity."
+                          title="Rating Deviation"
                         >
-                          <span>Rating Deviation</span>
-                          {sortBy === 'rd' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} />}
+                          <span>Deviation</span>
+                          {sortBy === 'rd' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} className="opacity-50" />}
                         </button>
                       </th>
-                      <th className="py-2 pr-4 hidden sm:table-cell">
-                        <button className="inline-flex items-center gap-1 hover:text-primary" onClick={() => toggleSort('matches')}>
-                          <span>Total matches</span>
-                          {sortBy === 'matches' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} />}
+                      <th className="py-3 px-4 text-right hidden sm:table-cell">
+                        <button className="inline-flex items-center gap-1 hover:text-primary transition-colors ml-auto" onClick={() => toggleSort('matches')}>
+                          <span>Battles</span>
+                          {sortBy === 'matches' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} className="opacity-50" />}
                         </button>
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-border/20">
                     {sortedPlayers.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                          {search ? `No players found matching "${search}"` : 'No players found.'}
+                        <td colSpan={5} className="py-12 text-center text-muted-foreground font-heading italic">
+                          {search ? `No warriors found matching "${search}"` : 'No warriors found.'}
                         </td>
                       </tr>
                     ) : (
                       paginatedPlayers.map((player, i) => {
                         const displayRank = getDisplayRank(i)
                         const totalMatches = playerMatchCounts.get(player.id) ?? 0
+                        const isTop3 = displayRank <= 3
+
                         return (
-                          <tr className="border-b last:border-0" key={player.id}>
-                            <td className="py-2 pr-4 w-10">{displayRank}</td>
-                            <td className="py-2 pr-4">
+                          <tr
+                            className={`group transition-colors hover:bg-primary/5 ${isTop3 ? 'bg-primary/5' : ''}`}
+                            key={player.id}
+                          >
+                            <td className="py-3 px-4 text-center">
+                              <div className={`font-heading font-bold text-base ${displayRank === 1 ? 'text-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]' :
+                                displayRank === 2 ? 'text-gray-300 drop-shadow-[0_0_5px_rgba(209,213,219,0.5)]' :
+                                  displayRank === 3 ? 'text-amber-700 drop-shadow-[0_0_5px_rgba(180,83,9,0.5)]' :
+                                    'text-muted-foreground'
+                                }`}>
+                                #{displayRank}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
                               <Link
-                                className="flex items-center gap-2 text-primary hover:underline"
+                                className="flex items-center gap-3 group/link"
                                 to={`/players/${player.id}`}
                               >
-                                <PlayerAvatar
-                                  name={player.name}
-                                  twitter={player.twitter}
-                                  size={32}
-                                  className="h-8 w-8"
-                                />
-                                <span>{player.name}</span>
+                                <div className="relative">
+                                  <div className={`absolute inset-0 rounded-full blur-sm opacity-0 group-hover/link:opacity-100 transition-opacity ${displayRank === 1 ? 'bg-yellow-500/50' : 'bg-primary/30'
+                                    }`} />
+                                  <PlayerAvatar
+                                    name={player.name}
+                                    twitter={player.twitter}
+                                    size={40}
+                                    className={`h-10 w-10 border-2 relative z-10 transition-colors ${displayRank === 1 ? 'border-yellow-500' :
+                                      displayRank === 2 ? 'border-gray-300' :
+                                        displayRank === 3 ? 'border-amber-700' :
+                                          'border-border group-hover/link:border-primary'
+                                      }`}
+                                  />
+                                </div>
+                                <span className={`font-heading font-bold text-base transition-colors ${displayRank <= 3 ? 'text-foreground' : 'text-foreground/90 group-hover/link:text-primary'
+                                  }`}>
+                                  {player.name}
+                                </span>
                               </Link>
                             </td>
-                            <td className="py-2 pr-4 font-medium">{format(player.rating ?? 0, 0)}</td>
-                            <td className="py-2 pr-4 hidden sm:table-cell" title="Rating Deviation: measures the uncertainty in a player's rating. Lower = more certain; it decreases with play and increases with inactivity.">{format(player.rd ?? 0, 0)}</td>
-                            <td className="py-2 pr-4 hidden sm:table-cell">{totalMatches}</td>
+                            <td className="py-3 px-4 text-right font-mono font-bold text-lg text-primary">
+                              {format(player.rating ?? 0, 0)}
+                            </td>
+                            <td className="py-3 px-4 text-right hidden sm:table-cell text-muted-foreground font-mono">
+                              {format(player.rd ?? 0, 0)}
+                            </td>
+                            <td className="py-3 px-4 text-right hidden sm:table-cell text-foreground font-bold">
+                              {totalMatches}
+                            </td>
                           </tr>
                         )
                       })
