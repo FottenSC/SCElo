@@ -47,7 +47,8 @@ async function preloadAvatar(twitter: string, size: number = 96): Promise<string
 
     const loadPromise = new Promise<string | null>((resolve) => {
         const img = new Image()
-        img.crossOrigin = 'anonymous'
+        // Don't set crossOrigin - unavatar.io doesn't return proper CORS headers
+        // Regular <img> tags can still display cross-origin images without CORS
 
         img.onload = () => {
             // Store the URL in cache (browser will have cached the image data)
