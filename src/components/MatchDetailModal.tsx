@@ -265,7 +265,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
         <div className="relative p-4 sm:p-6 md:p-10 space-y-6 md:space-y-8">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-background/50 to-background pointer-events-none" />
 
-          <div className="relative z-10 grid grid-cols-[1fr_auto_1fr] gap-2 sm:gap-4 md:gap-8 items-start">
+          <div className="relative z-10 grid grid-cols-[1fr_60px_1fr] sm:grid-cols-[1fr_80px_1fr] md:grid-cols-[1fr_120px_1fr] gap-2 sm:gap-4 md:gap-8 items-start">
             <div className="flex flex-col items-center gap-2 sm:gap-4 md:gap-6">
               {p1 && (
                 <>
@@ -334,8 +334,8 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
               )}
             </div>
 
-            <div className="flex flex-col items-center justify-center py-2 sm:py-4 md:py-0">
-              <div className="text-2xl sm:text-4xl md:text-7xl font-heading font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-700 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] italic">
+            <div className="flex flex-col items-center justify-center py-2 sm:py-4 md:py-0 overflow-hidden">
+              <div className="text-2xl sm:text-4xl md:text-7xl font-heading font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-700 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] italic pr-1 sm:pr-2">
                 VS
               </div>
             </div>
