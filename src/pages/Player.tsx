@@ -1,7 +1,8 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
-import { useParams, Link, useSearchParams } from 'react-router-dom'
+import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { Pagination } from '@/components/ui/pagination'
 import { usePlayersAndMatches, fetchEvents, fetchAllCompletedMatches } from '@/lib/data'
@@ -9,7 +10,7 @@ import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
 import { formatRatingChange } from '@/lib/predictions'
 import { useMatchModal } from '@/components/MatchModalContext'
 import { RatingProgressionChart } from '@/components/RatingProgressionChart'
-import { Link as LinkIcon, ArrowUp, ArrowDown, Trophy, TrendingUp } from 'lucide-react'
+import { Link as LinkIcon, ArrowUp, ArrowDown, Trophy, TrendingUp, Search, X } from 'lucide-react'
 import { supabase } from '@/supabase/client'
 import type { Event, RatingEvent, Season, Match } from '@/types/models'
 import { getAllSeasons } from '@/lib/seasons'
@@ -37,6 +38,8 @@ export default function Player() {
   const [events, setEvents] = useState<Event[]>([])
   const [seasons, setSeasons] = useState<Season[]>([])
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null)
+  const [opponentSearch, setOpponentSearch] = useState('')
+  const navigate = useNavigate()
 
   useEffect(() => {
     let active = true
@@ -54,6 +57,11 @@ export default function Player() {
         const all = await getAllSeasons()
         if (!active) return
         setSeasons(all)
+        // Default to active season
+        const activeSeason = all.find(s => s.status === 'active')
+        if (activeSeason) {
+          setSelectedSeason(activeSeason.id)
+        }
       })()
     return () => { active = false }
   }, [])
@@ -109,9 +117,20 @@ export default function Player() {
   }, [allMatches, playerId])
 
   const seasonFilteredMatches = useMemo(() => {
-    if (selectedSeason === null) return myMatches
-    return myMatches.filter((m: Match) => m.season_id === selectedSeason)
-  }, [myMatches, selectedSeason])
+    let filtered = myMatches
+    if (selectedSeason !== null) {
+      filtered = filtered.filter((m: Match) => m.season_id === selectedSeason)
+    }
+    if (opponentSearch.trim()) {
+      const searchLower = opponentSearch.toLowerCase().trim()
+      filtered = filtered.filter((m: Match) => {
+        const oppId = m.player1_id === playerId ? m.player2_id : m.player1_id
+        const opp = players.find(p => p.id === oppId)
+        return opp?.name.toLowerCase().includes(searchLower)
+      })
+    }
+    return filtered
+  }, [myMatches, selectedSeason, opponentSearch, playerId, players])
 
   const stats = useMemo(() => {
     let w = 0, l = 0
@@ -301,7 +320,7 @@ export default function Player() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [selectedSeason])
+  }, [selectedSeason, opponentSearch])
 
   return (
     <section className="space-y-8">
@@ -469,34 +488,67 @@ export default function Player() {
           <Card className="bg-card/50 backdrop-blur-sm border-border/50">
             <CardHeader className="border-b border-border/30 pb-4">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <CardTitle className="font-heading uppercase tracking-wider text-lg flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary rounded-full" />
-                  Battle Log
-                </CardTitle>
-                <div className="w-full md:w-64">
-                  <Combobox
-                    value={selectedSeason === null ? 'all' : String(selectedSeason)}
-                    onValueChange={(val) => {
-                      setSelectedSeason(val === 'all' ? null : parseInt(val, 10))
-                    }}
-                    placeholder="Select season..."
-                    searchPlaceholder="Search seasons..."
-                    options={[
-                      { value: 'all', label: 'All seasons' },
-                      ...seasons.filter(s => s.status === 'active').map(s => ({
-                        value: String(s.id),
-                        label: `${s.name} (Active)`
-                      })),
-                      ...seasons.filter(s => s.status === 'archived').sort((a, b) => a.id - b.id).map(s => ({
-                        value: String(s.id),
-                        label: `${s.name} (Archived)`
-                      }))
-                    ]}
-                  />
+                <div className="flex items-center gap-4">
+                  <CardTitle className="font-heading uppercase tracking-wider text-lg flex items-center gap-2">
+                    <div className="w-2 h-2 bg-primary rounded-full" />
+                    Battle Log
+                  </CardTitle>
+                  <span className="text-sm text-muted-foreground">
+                    {seasonFilteredMatches.length} match{seasonFilteredMatches.length !== 1 ? 'es' : ''}
+                  </span>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                  <div className="relative w-full sm:w-48">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search opponent..."
+                      value={opponentSearch}
+                      onChange={(e) => setOpponentSearch(e.target.value)}
+                      className="pl-8 pr-8 h-9"
+                    />
+                    {opponentSearch && (
+                      <button
+                        onClick={() => setOpponentSearch('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="w-full sm:w-48">
+                    <Combobox
+                      value={selectedSeason === null ? 'all' : String(selectedSeason)}
+                      onValueChange={(val) => {
+                        setSelectedSeason(val === 'all' ? null : parseInt(val, 10))
+                      }}
+                      placeholder="Select season..."
+                      searchPlaceholder="Search seasons..."
+                      options={[
+                        { value: 'all', label: 'All seasons' },
+                        ...seasons.filter(s => s.status === 'active').map(s => ({
+                          value: String(s.id),
+                          label: `${s.name} (Active)`
+                        })),
+                        ...seasons.filter(s => s.status === 'archived').sort((a, b) => a.id - b.id).map(s => ({
+                          value: String(s.id),
+                          label: `${s.name} (Archived)`
+                        }))
+                      ]}
+                    />
+                  </div>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-0">
+              {/* Table Header - Hidden on mobile */}
+              <div className="hidden md:grid md:grid-cols-[auto_1fr_100px_80px_100px] gap-4 px-4 py-2 bg-muted/30 border-b border-border/30 text-xs font-heading uppercase tracking-wider text-muted-foreground">
+                <div className="w-6"></div>
+                <div>Opponent</div>
+                <div className="text-center">Score</div>
+                <div className="text-right">Rating</div>
+                <div className="text-right">Event</div>
+              </div>
+
               <div className="divide-y divide-border/30">
                 {paginatedMatches.map((m) => {
                   const oppId = m.player1_id === playerId ? m.player2_id : m.player1_id
@@ -508,69 +560,130 @@ export default function Player() {
                   const oppScore = m.player1_id === playerId ? (m.player2_score ?? '?') : (m.player1_score ?? '?')
 
                   return (
-                    <div key={m.id} className="p-4 hover:bg-muted/20 transition-colors group">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className={`text-xs font-bold uppercase px-1.5 py-0.5 rounded border ${won ? 'bg-green-500/10 text-green-500 border-green-500/30' : 'bg-red-500/10 text-red-500 border-red-500/30'}`}>
-                          {won ? 'Victory' : 'Defeat'}
-                        </span>
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {event ? event.title : 'Match #' + m.id}
-                        </span>
-                      </div>
+                    <button
+                      key={m.id}
+                      onClick={() => openMatch(m.id)}
+                      className="w-full text-left hover:bg-muted/30 transition-colors cursor-pointer focus:outline-none focus:bg-muted/30"
+                    >
+                      {/* Desktop Layout */}
+                      <div className="hidden md:grid md:grid-cols-[auto_1fr_100px_80px_100px] gap-4 px-4 py-3 items-center">
+                        {/* Win/Loss Indicator */}
+                        <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${won ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                          {won ? 'W' : 'L'}
+                        </div>
 
-                      <div className="flex items-center justify-between gap-4">
+                        {/* Opponent */}
                         <div className="flex items-center gap-3 min-w-0">
                           {opp ? (
-                            <Link to={`/players/${oppId}`} className="shrink-0 relative">
+                            <div
+                              onClick={(e) => { e.stopPropagation(); navigate(`/players/${oppId}`); }}
+                              className="flex items-center gap-3 min-w-0 cursor-pointer hover:text-primary transition-colors"
+                            >
                               <PlayerAvatar
                                 name={opp.name}
                                 twitter={opp.twitter}
-                                size={40}
-                                className="h-10 w-10 border border-border group-hover:border-primary transition-colors"
+                                size={32}
+                                className="h-8 w-8 border border-border shrink-0 hover:border-primary transition-colors"
                               />
-                            </Link>
-                          ) : (
-                            <div className="h-10 w-10 bg-muted rounded-full" />
-                          )}
-                          <div className="min-w-0">
-                            <div className="text-xs text-muted-foreground uppercase tracking-wider">VS</div>
-                            {opp ? (
-                              <Link to={`/players/${oppId}`} className="font-heading font-bold text-sm truncate hover:text-primary block">
+                              <span className="font-medium text-sm truncate">
                                 {opp.name}
-                              </Link>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">Unknown</span>
-                            )}
-                          </div>
+                              </span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="h-8 w-8 bg-muted rounded-full shrink-0" />
+                              <span className="font-medium text-sm truncate text-muted-foreground">Unknown</span>
+                            </>
+                          )}
                         </div>
 
-                        <div className="text-right shrink-0">
-                          <div className="font-heading font-black text-xl">
-                            <span className={won ? 'text-green-500' : 'text-muted-foreground'}>{playerScore}</span>
-                            <span className="text-muted-foreground mx-1">-</span>
-                            <span className={!won ? 'text-green-500' : 'text-muted-foreground'}>{oppScore}</span>
-                          </div>
-                          <div className="text-xs font-bold">
-                            {ratingDelta !== null && ratingDelta !== undefined ? (
-                              <span className={ratingDelta >= 0 ? 'text-green-500' : 'text-red-500'}>
-                                {ratingDelta > 0 ? '+' : ''}{ratingDelta.toFixed(1)}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </div>
+                        {/* Score */}
+                        <div className="text-center font-heading font-bold">
+                          <span className={won ? 'text-green-500' : 'text-muted-foreground'}>{playerScore}</span>
+                          <span className="text-muted-foreground mx-1">-</span>
+                          <span className={!won ? 'text-green-500' : 'text-muted-foreground'}>{oppScore}</span>
+                        </div>
+
+                        {/* Rating Change */}
+                        <div className="text-right text-sm font-bold">
+                          {ratingDelta !== null && ratingDelta !== undefined ? (
+                            <span className={ratingDelta >= 0 ? 'text-green-500' : 'text-red-500'}>
+                              {ratingDelta > 0 ? '+' : ''}{Math.round(ratingDelta)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </div>
+
+                        {/* Event */}
+                        <div className="text-right text-xs text-muted-foreground truncate" title={event?.title || `Match #${m.id}`}>
+                          {event?.title || `#${m.id}`}
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => openMatch(m.id)}
-                        className="w-full mt-3 text-xs text-center py-1.5 border border-border/50 rounded hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-colors uppercase tracking-wider font-bold opacity-0 group-hover:opacity-100"
-                      >
-                        View Details
-                      </button>
-                    </div>
+                      {/* Mobile Layout */}
+                      <div className="md:hidden px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {/* Win/Loss Indicator */}
+                          <div className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold shrink-0 ${won ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                            {won ? 'W' : 'L'}
+                          </div>
+
+                          {/* Opponent Avatar & Name */}
+                          {opp ? (
+                            <div
+                              onClick={(e) => { e.stopPropagation(); navigate(`/players/${oppId}`); }}
+                              className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                            >
+                              <PlayerAvatar
+                                name={opp.name}
+                                twitter={opp.twitter}
+                                size={32}
+                                className="h-8 w-8 border border-border shrink-0 hover:border-primary transition-colors"
+                              />
+                              <div className="min-w-0">
+                                <div className="font-medium text-sm truncate hover:text-primary transition-colors">{opp.name}</div>
+                                <div className="text-xs text-muted-foreground truncate">{event?.title || `Match #${m.id}`}</div>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="h-8 w-8 bg-muted rounded-full shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-sm truncate text-muted-foreground">Unknown</div>
+                                <div className="text-xs text-muted-foreground truncate">{event?.title || `Match #${m.id}`}</div>
+                              </div>
+                            </>
+                          )}
+
+                          {/* Score & Rating */}
+                          <div className="text-right shrink-0">
+                            <div className="font-heading font-bold text-sm">
+                              <span className={won ? 'text-green-500' : 'text-muted-foreground'}>{playerScore}</span>
+                              <span className="text-muted-foreground">-</span>
+                              <span className={!won ? 'text-green-500' : 'text-muted-foreground'}>{oppScore}</span>
+                            </div>
+                            <div className="text-xs font-bold">
+                              {ratingDelta !== null && ratingDelta !== undefined ? (
+                                <span className={ratingDelta >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                  {ratingDelta > 0 ? '+' : ''}{Math.round(ratingDelta)}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
                   )
                 })}
+
+                {paginatedMatches.length === 0 && (
+                  <div className="px-4 py-8 text-center text-muted-foreground text-sm">
+                    No matches found for this season.
+                  </div>
+                )}
               </div>
 
               {seasonFilteredMatches.length > ITEMS_PER_PAGE && (

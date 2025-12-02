@@ -285,7 +285,7 @@ export default function Rankings() {
 
             <div className="w-full md:w-auto flex-1">
               <Input
-                placeholder="Search warrior…"
+                placeholder="Search for player…"
                 value={search}
                 onChange={(e) => { setCurrentPage(1); setSearch(e.target.value) }}
                 className="w-full bg-background/50 border-primary/30 focus:ring-primary/50"
