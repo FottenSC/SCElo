@@ -478,6 +478,7 @@ export default function Player() {
                   <h3 className="font-heading uppercase tracking-wider text-lg text-foreground">Rating History</h3>
                 </div>
                 <RatingProgressionChart
+                  key={playerId}
                   data={ratingHistory}
                   onMatchClick={openMatch}
                 />

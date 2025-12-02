@@ -271,6 +271,7 @@ export function RatingProgressionChart({ data, onMatchClick }: RatingProgression
         highcharts={Highcharts}
         options={chartOptions}
         constructorType="chart"
+        immutable={true}
       />
     </div>
   )
