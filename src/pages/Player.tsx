@@ -100,11 +100,15 @@ export default function Player() {
   // Set title: show placeholder while loading or player not found
   useDocumentTitle(player ? `Player - ${player.name}` : 'Player')
 
-  // Calculate player rank
+  // Calculate player rank (only among players who have played this season)
   const playerRank = useMemo(() => {
     if (!player) return null
-    const sorted = [...players].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-    return sorted.findIndex(p => p.id === player.id) + 1
+    // Filter to only players who have played this season
+    const activePlayers = players.filter(p => p.has_played_this_season)
+    const sorted = [...activePlayers].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+    const rank = sorted.findIndex(p => p.id === player.id)
+    // Return null if player hasn't played this season (not in the ranked list)
+    return rank >= 0 ? rank + 1 : null
   }, [players, player])
 
   const myMatches = useMemo(() => {
