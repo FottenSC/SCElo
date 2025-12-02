@@ -42,7 +42,6 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
     <div className="group relative p-4 border border-border/40 rounded-lg space-y-3 bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_15px_rgba(var(--primary-rgb),0.2)] overflow-hidden">
       <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-primary/0 to-transparent group-hover:via-primary/50 transition-all duration-500" />
 
-      {/* Header with Match Number or Links */}
       {(showMatchNumber || (showLinksInHeader && hasLinks)) && (
         <div className="flex items-center justify-between gap-2 flex-wrap border-b border-white/5 pb-2 mb-2">
           <div className="flex items-center gap-3 text-sm">
@@ -93,7 +92,6 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
         </div>
       )}
 
-      {/* Player 1 */}
       <div className={`relative flex items-center justify-between p-2 rounded-md transition-colors ${isCompleted && isP1Winner ? 'bg-gradient-to-r from-yellow-500/10 to-transparent border-l-2 border-yellow-500' : 'hover:bg-white/5'}`}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <PlayerAvatar
@@ -123,7 +121,6 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
         )}
       </div>
 
-      {/* Score / VS */}
       {isCompleted ? (
         <button
           onClick={() => openMatch(match.id)}
@@ -146,7 +143,6 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
         </div>
       )}
 
-      {/* Player 2 */}
       <div className={`relative flex items-center justify-between p-2 rounded-md transition-colors ${isCompleted && !isP1Winner ? 'bg-gradient-to-r from-yellow-500/10 to-transparent border-l-2 border-yellow-500' : 'hover:bg-white/5'}`}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <PlayerAvatar
@@ -176,7 +172,6 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
         )}
       </div>
 
-      {/* Footer with Event Link and VOD Links (only if not shown in header) */}
       {!showLinksInHeader && !showMatchNumber && hasLinks && (
         <div className="flex items-center justify-center gap-4 text-xs font-bold uppercase tracking-wider text-muted-foreground border-t border-white/5 pt-3 mt-2">
           {showEventLink && event && (

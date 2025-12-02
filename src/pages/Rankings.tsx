@@ -266,17 +266,14 @@ export default function Rankings() {
                   <SelectValue placeholder="Select a season" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* All seasons option */}
                   <SelectItem value="all">
                     All seasons
                   </SelectItem>
-                  {/* Show active season */}
                   {seasons.filter(s => s.status === 'active').map(season => (
                     <SelectItem key={season.id} value={season.id.toString()}>
                       {season.name}
                     </SelectItem>
                   ))}
-                  {/* Then show archived seasons from oldest to newest */}
                   {seasons.filter(s => s.status === 'archived').sort((a, b) => a.id - b.id).map(season => (
                     <SelectItem key={season.id} value={season.id.toString()}>
                       {season.name} (Archived)

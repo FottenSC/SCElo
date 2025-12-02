@@ -326,7 +326,6 @@ export default function EventDashboard() {
 
       {selectedEventId && !loading && (
         <>
-          {/* Upcoming Matches */}
           {upcomingMatches.length > 0 && (
             <Card className="bg-card/50 border-border/50">
               <CardHeader>
@@ -362,7 +361,6 @@ export default function EventDashboard() {
             </Card>
           )}
 
-          {/* Completed Matches */}
           {completedMatches.length > 0 && (
             <Card className="bg-card/50 border-border/50">
               <CardHeader>
@@ -438,7 +436,6 @@ export default function EventDashboard() {
         </div>
       )}
 
-      {/* Score Registration Dialog */}
       <Dialog open={scoreDialogOpen} onOpenChange={setScoreDialogOpen}>
         <DialogContent className="bg-card/90 backdrop-blur-xl border-primary/20">
           <DialogHeader>

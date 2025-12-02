@@ -29,7 +29,6 @@ export default function Player() {
   const playerId = id ? parseInt(id) : NaN
   const [currentPage, setCurrentPage] = useState(1)
   const { openMatch } = useMatchModal()
-  // Rating match events - resets are detected by season_id changes in matches
   const [ratingMatchEvents, setRatingMatchEvents] = useState<RatingEvent[]>([])
 
   const { players, matches: activeSeasonMatches, loading: playersLoading } = usePlayersAndMatches()
@@ -37,7 +36,6 @@ export default function Player() {
   const [matchesLoading, setMatchesLoading] = useState(true)
   const [events, setEvents] = useState<Event[]>([])
   const [seasons, setSeasons] = useState<Season[]>([])
-  // null = All seasons, number = specific season id (default to All)
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null)
 
   useEffect(() => {
@@ -50,7 +48,6 @@ export default function Player() {
     return () => { active = false }
   }, [])
 
-  // Load seasons for filter (do not auto-select; keep default as All seasons)
   useEffect(() => {
     let active = true
       ; (async () => {
@@ -61,7 +58,6 @@ export default function Player() {
     return () => { active = false }
   }, [])
 
-  // Load all completed matches (across all seasons) for the player page
   useEffect(() => {
     let active = true
       ; (async () => {
@@ -74,7 +70,6 @@ export default function Player() {
     return () => { active = false }
   }, [])
 
-  // Fetch rating events: match events only (resets detected by season_id changes)
   useEffect(() => {
     if (isNaN(playerId)) return
     let active = true
@@ -97,24 +92,19 @@ export default function Player() {
   }, [playerId, allMatches])
 
   const player = useMemo(() => !isNaN(playerId) ? players.find((p) => p.id === playerId) : undefined, [players, playerId])
-  // Set title: show placeholder while loading or player not found
   useDocumentTitle(player ? `Player - ${player.name}` : 'Player')
 
-  // Calculate player rank (only among players who have played this season)
   const playerRank = useMemo(() => {
     if (!player) return null
-    // Filter to only players who have played this season
     const activePlayers = players.filter(p => p.has_played_this_season)
     const sorted = [...activePlayers].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     const rank = sorted.findIndex(p => p.id === player.id)
-    // Return null if player hasn't played this season (not in the ranked list)
     return rank >= 0 ? rank + 1 : null
   }, [players, player])
 
   const myMatches = useMemo(() => {
     if (isNaN(playerId)) return []
     const filtered = allMatches.filter((m: Match) => m.player1_id === playerId || m.player2_id === playerId)
-    // sort by most recent first
     return filtered.sort((a: Match, b: Match) => b.id - a.id)
   }, [allMatches, playerId])
 
@@ -123,7 +113,6 @@ export default function Player() {
     return myMatches.filter((m: Match) => m.season_id === selectedSeason)
   }, [myMatches, selectedSeason])
 
-  // Calculate stats
   const stats = useMemo(() => {
     let w = 0, l = 0
     const recentForm: {
@@ -174,13 +163,10 @@ export default function Player() {
     return { w, l, winRate, recentForm }
   }, [myMatches, playerId, players])
 
-  // Rating progression based on selected count
   const ratingHistory = useMemo(() => {
     if (!player) return []
 
-    // Use rating match events if available
     if (ratingMatchEvents.length > 0) {
-      // Map all match events
       const allMatches = ratingMatchEvents
         .filter(e => e.match_id)
         .map((event) => {
@@ -202,7 +188,6 @@ export default function Player() {
           }
         })
 
-      // Deduplicate by matchId keeping the highest eventId (latest)
       const latestByMatch = new Map<number, typeof allMatches[number]>()
       for (const m of allMatches) {
         const existing = m.matchId ? latestByMatch.get(m.matchId) : undefined
@@ -211,17 +196,10 @@ export default function Player() {
         }
       }
       let uniqueMatches = Array.from(latestByMatch.values())
-
-      // Sort chronologically
       uniqueMatches.sort((a, b) => a.eventId - b.eventId)
-
-      // Apply count filter - always show all
-      const count = uniqueMatches.length
-      uniqueMatches = uniqueMatches.slice(-count)
 
       if (uniqueMatches.length === 0) return []
 
-      // Insert reset markers when season changes
       const finalSeries: Array<{
         matchNum: number
         rating: number
@@ -237,7 +215,6 @@ export default function Player() {
         const match = uniqueMatches[i]!
         const prevMatch = i > 0 ? uniqueMatches[i - 1] : null
 
-        // Insert a reset marker when season changes
         if (prevMatch && prevMatch.seasonId !== match.seasonId) {
           finalSeries.push({
             matchNum: finalSeries.length + 1,
@@ -266,13 +243,9 @@ export default function Player() {
       return finalSeries
     }
 
-    // Fallback: use matches from the myMatches data - always show all
-    const count = myMatches.length
-    let selectedMatches = [...myMatches].slice(0, count).reverse()
-
+    let selectedMatches = [...myMatches].reverse()
     if (selectedMatches.length === 0) return []
 
-    // Calculate starting rating
     let startingRating = player.rating ?? 1500
 
     for (const m of selectedMatches) {
@@ -281,7 +254,6 @@ export default function Player() {
       startingRating -= ratingChange
     }
 
-    // Build history
     const history: Array<{
       matchNum: number
       rating: number
@@ -320,7 +292,6 @@ export default function Player() {
     return history
   }, [myMatches, playerId, player, players, events, ratingMatchEvents])
 
-  // Pagination calculations
   const totalPages = Math.ceil(seasonFilteredMatches.length / ITEMS_PER_PAGE)
   const paginatedMatches = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE
@@ -328,7 +299,6 @@ export default function Player() {
     return seasonFilteredMatches.slice(start, end)
   }, [seasonFilteredMatches, currentPage])
 
-  // Reset pagination when season filter changes
   useEffect(() => {
     setCurrentPage(1)
   }, [selectedSeason])
@@ -357,7 +327,6 @@ export default function Player() {
 
       {player && (
         <>
-          {/* Hero / Player Card */}
           <div className="relative overflow-hidden rounded-lg border border-primary/50 bg-card/80 backdrop-blur-md shadow-[0_0_20px_rgba(0,0,0,0.5)]">
             <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
               <Trophy size={200} />
@@ -422,11 +391,9 @@ export default function Player() {
               </div>
             </div>
 
-            {/* Badges & Recent Form */}
             <div className="px-6 pb-6 md:px-8 md:pb-8 relative z-10">
               <div className="border-t border-border/30 pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Badges */}
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground">Badges</div>
@@ -436,7 +403,6 @@ export default function Player() {
                     </div>
                   </div>
 
-                  {/* Recent Form */}
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground">Recent Form</div>
@@ -460,7 +426,6 @@ export default function Player() {
                             >
                               <div className="text-lg font-bold">{form.result}</div>
                             </button>
-                            {/* Tooltip */}
                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-popover border border-border rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap">
                               <div className="text-xs font-heading font-bold text-foreground">{form.opponentName}</div>
                               <div className="text-xs text-muted-foreground mt-0.5">
@@ -471,7 +436,6 @@ export default function Player() {
                                   {form.ratingChange >= 0 ? '+' : ''}{Math.round(form.ratingChange)}
                                 </div>
                               )}
-                              {/* Arrow */}
                               <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border"></div>
                             </div>
                           </div>
@@ -484,7 +448,6 @@ export default function Player() {
             </div>
           </div>
 
-          {/* Rating Progression */}
           {ratingHistory.length > 0 && (
             <div className="relative overflow-hidden rounded-lg border border-primary/30 bg-card/80 backdrop-blur-md shadow-lg">
               <div className="absolute top-0 left-0 w-1 h-full bg-primary/60" />
@@ -503,7 +466,6 @@ export default function Player() {
             </div>
           )}
 
-          {/* Battle Log - Full Width */}
           <Card className="bg-card/50 backdrop-blur-sm border-border/50">
             <CardHeader className="border-b border-border/30 pb-4">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

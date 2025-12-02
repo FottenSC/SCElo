@@ -239,13 +239,11 @@ export default function EventManagement() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {/* Show active season first */}
               {seasons.filter(s => s.status === 'active').map(season => (
                 <SelectItem key={season.id} value={season.id.toString()}>
                   {season.name} (Active)
                 </SelectItem>
               ))}
-              {/* Then show archived seasons from oldest to newest */}
               {seasons.filter(s => s.status === 'archived').sort((a, b) => a.id - b.id).map(season => (
                 <SelectItem key={season.id} value={season.id.toString()}>
                   {season.name} (Archived)

@@ -34,7 +34,6 @@ function AppContent() {
                 </span>
               </div>
             </NavLink>
-            {/* Desktop nav */}
             <div className="hidden md:flex gap-6 text-sm font-heading font-bold tracking-wider uppercase">
               <NavLink to="/rankings" className={({ isActive }) =>
                 `transition-colors hover:text-primary ${isActive ? 'text-primary drop-shadow-[0_0_8px_rgba(234,179,8,0.4)]' : 'text-muted-foreground'}`
@@ -52,7 +51,6 @@ function AppContent() {
                 Events
               </NavLink>
             </div>
-            {/* Right controls */}
             <div className="ml-auto flex items-center gap-2 md:gap-4 min-w-0">
               {loading ? (
                 <div className="h-8 w-24 animate-pulse rounded-md bg-muted" aria-hidden />
@@ -64,7 +62,6 @@ function AppContent() {
                 </Button>
               )}
               <ThemeToggle />
-              {/* Mobile menu button */}
               <button
                 type="button"
                 aria-label="Toggle menu"
@@ -75,7 +72,6 @@ function AppContent() {
                 {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
             </div>
-            {/* Mobile menu panel */}
             <div className={`${menuOpen ? 'block' : 'hidden'} w-full md:hidden border-t border-border/50 mt-2`}
               onClick={() => setMenuOpen(false)}>
               <div className="flex flex-col gap-2 pt-4 pb-3 text-sm font-heading font-bold tracking-wider uppercase">
@@ -104,7 +100,6 @@ function AppContent() {
         </main>
       </div>
 
-      {/* Match Detail Modal */}
       <MatchDetailModal
         matchId={matchId}
         open={matchId !== null}

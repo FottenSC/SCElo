@@ -257,7 +257,6 @@ WHERE id = '${session.user.id}';`}
           </TabsContent>
 
           <TabsContent value="seasons" className="space-y-6 m-0">
-            {/* Active Season Card */}
             <Card className="bg-card/50 border-border/50">
               <CardHeader>
                 <CardTitle className="font-heading text-2xl text-primary">Active Season</CardTitle>
@@ -286,7 +285,6 @@ WHERE id = '${session.user.id}';`}
               </CardContent>
             </Card>
 
-            {/* Archive Season Card */}
             <Card className="border-amber-500/30 bg-amber-500/5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 font-heading text-xl text-amber-500">
@@ -335,7 +333,6 @@ WHERE id = '${session.user.id}';`}
               </CardContent>
             </Card>
 
-            {/* Archive History Card */}
             <Card className="bg-card/50 border-border/50">
               <CardHeader>
                 <CardTitle className="font-heading text-2xl">Season History</CardTitle>
@@ -401,7 +398,6 @@ WHERE id = '${session.user.id}';`}
           </TabsContent>
 
           <TabsContent value="tools" className="space-y-6 m-0">
-            {/* Calculate Season Ratings Card */}
             <Card className="bg-card/50 border-border/50">
               <CardHeader>
                 <CardTitle className="font-heading text-2xl">Calculate Season Ratings</CardTitle>
@@ -420,7 +416,6 @@ WHERE id = '${session.user.id}';`}
                       <SelectValue placeholder="Choose a season..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {/* Show all seasons sorted: active (0) first, then archived descending by id */}
                       {allSeasons
                         .sort((a, b) => {
                           // Active season (id=0) always first

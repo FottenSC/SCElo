@@ -263,12 +263,9 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
         </DialogHeader>
 
         <div className="relative p-4 sm:p-6 md:p-10 space-y-6 md:space-y-8">
-          {/* Background Elements */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-background/50 to-background pointer-events-none" />
 
-          {/* Main Match Display - Side by Side Layout */}
           <div className="relative z-10 grid grid-cols-[1fr_auto_1fr] gap-2 sm:gap-4 md:gap-8 items-start">
-            {/* Player 1 Column */}
             <div className="flex flex-col items-center gap-2 sm:gap-4 md:gap-6">
               {p1 && (
                 <>
@@ -289,7 +286,6 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                     <div className="font-heading font-bold text-sm sm:text-lg md:text-2xl mt-2 sm:mt-4 group-hover:text-primary transition-colors text-center tracking-wide line-clamp-2">{p1.name}</div>
                   </Link>
 
-                  {/* Player 1 Stats Card */}
                   <div className={`w-full rounded-lg border p-2 sm:p-3 md:p-4 backdrop-blur-sm transition-colors ${match.winner_id === match.player1_id
                     ? 'border-yellow-500/50 bg-yellow-500/5'
                     : 'border-border/50 bg-card/30'
@@ -338,14 +334,12 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
               )}
             </div>
 
-            {/* VS Divider */}
             <div className="flex flex-col items-center justify-center py-2 sm:py-4 md:py-0">
               <div className="text-2xl sm:text-4xl md:text-7xl font-heading font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-700 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] italic">
                 VS
               </div>
             </div>
 
-            {/* Player 2 Column */}
             <div className="flex flex-col items-center gap-2 sm:gap-4 md:gap-6">
               {p2 && (
                 <>
@@ -366,7 +360,6 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                     <div className="font-heading font-bold text-sm sm:text-lg md:text-2xl mt-2 sm:mt-4 group-hover:text-primary transition-colors text-center tracking-wide line-clamp-2">{p2.name}</div>
                   </Link>
 
-                  {/* Player 2 Stats Card */}
                   <div className={`w-full rounded-lg border p-2 sm:p-3 md:p-4 backdrop-blur-sm transition-colors ${match.winner_id === match.player2_id
                     ? 'border-yellow-500/50 bg-yellow-500/5'
                     : 'border-border/50 bg-card/30'
@@ -416,7 +409,6 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
             </div>
           </div>
 
-          {/* Event and Video Links */}
           {(match.event_id || match.vod_link || seasonName) && (
             <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 md:gap-6 pt-4 sm:pt-6 border-t border-border/30">
               <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4">

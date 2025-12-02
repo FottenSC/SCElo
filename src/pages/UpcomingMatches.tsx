@@ -161,9 +161,7 @@ export function UpcomingMatches() {
                         Match {idx + 1}
                       </div>
 
-                      {/* Match layout: Player1 | VS | Player2 */}
                       <div className="flex items-center justify-between gap-4 mt-2">
-                        {/* Player 1 */}
                         <div className="flex items-center gap-4 flex-1">
                           <Link to={`/players/${player1.id}`} className="relative shrink-0 group/p1">
                             <div className="absolute inset-0 bg-primary/20 rounded-full blur-md opacity-0 group-hover/p1:opacity-100 transition-opacity" />
@@ -194,12 +192,10 @@ export function UpcomingMatches() {
                           </div>
                         </div>
 
-                        {/* VS */}
                         <div className="font-heading font-black text-2xl text-primary/20 shrink-0 px-4 select-none group-hover/match:text-primary/40 transition-colors italic">
                           VS
                         </div>
 
-                        {/* Player 2 */}
                         <div className="flex items-center gap-4 flex-1 flex-row-reverse text-right">
                           <Link to={`/players/${player2.id}`} className="relative shrink-0 group/p2">
                             <div className="absolute inset-0 bg-primary/20 rounded-full blur-md opacity-0 group-hover/p2:opacity-100 transition-opacity" />
