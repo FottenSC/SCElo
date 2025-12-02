@@ -400,12 +400,7 @@ export default function Player() {
                   <div className="space-y-1">
                     <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground">Rank</div>
                     <div className="text-3xl font-bold text-foreground">
-                      #{playerRank}
-                      {playerRank && playerRank <= 10 && (
-                        <span className="ml-2 text-xs align-top bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 px-1.5 py-0.5 rounded font-heading">
-                          Top 10
-                        </span>
-                      )}
+                      #{playerRank ?? '?'}
                     </div>
                   </div>
                   <div className="space-y-1">
