@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Pagination } from '@/components/ui/pagination'
@@ -8,7 +8,8 @@ import { Combobox } from '@/components/ui/combobox'
 import { usePlayersAndMatches, fetchEvents } from '@/lib/data'
 import { getAllSeasons } from '@/lib/seasons'
 import type { Season } from '@/types/models'
-import { MatchCard } from '@/components/MatchCard'
+import { PlayerAvatar } from '@/components/PlayerAvatar'
+import { useMatchModal } from '@/components/MatchModalContext'
 import type { Event } from '@/types/models'
 
 const ITEMS_PER_PAGE = 25
@@ -19,6 +20,8 @@ export default function Matches() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [events, setEvents] = React.useState<Event[]>([])
   const [seasons, setSeasons] = React.useState<Season[]>([])
+  const { openMatch } = useMatchModal()
+  const navigate = useNavigate()
   // null = All seasons, number = specific season id
   const [selectedSeason, setSelectedSeason] = React.useState<number | null>(() => {
     const sp = searchParams.get('season')
@@ -168,29 +171,85 @@ export default function Matches() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {paginatedMatches.map((m) => {
-            const p1 = byId.get(m.player1_id)
-            const p2 = byId.get(m.player2_id)
-            const event = m.event_id ? eventById.get(m.event_id) : null
+        <Card className="bg-card/50 backdrop-blur-sm border-border/50 overflow-hidden">
+          <div className="divide-y divide-border/30">
+            {paginatedMatches.map((m) => {
+              const p1 = byId.get(m.player1_id)
+              const p2 = byId.get(m.player2_id)
+              const event = m.event_id ? eventById.get(m.event_id) : null
+              const isCompleted = m.winner_id !== null
+              const isP1Winner = m.winner_id === m.player1_id
 
-            if (!p1 || !p2) {
-              return null
-            }
+              if (!p1 || !p2) {
+                return null
+              }
 
-            return (
-              <MatchCard
-                key={m.id}
-                match={m}
-                player1={p1}
-                player2={p2}
-                event={event}
-                showEventLink={true}
-                showLinksInHeader={true}
-              />
-            )
-          })}
-        </div>
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => openMatch(m.id)}
+                  className="w-full text-left hover:bg-muted/30 transition-colors cursor-pointer focus:outline-none focus:bg-muted/30 px-4 py-3"
+                >
+                  <div className="flex items-center justify-center gap-3 md:gap-6">
+                    {/* Player 1 - right aligned */}
+                    <div
+                      onClick={(e) => { e.stopPropagation(); navigate(`/players/${p1.id}`); }}
+                      className="flex items-center gap-2 md:gap-3 flex-1 min-w-0 justify-end cursor-pointer group/p1"
+                    >
+                      <span className={`font-heading font-bold text-sm md:text-base truncate transition-colors group-hover/p1:text-primary ${isCompleted && isP1Winner ? 'text-yellow-500' : ''}`}>
+                        {p1.name}
+                      </span>
+                      <PlayerAvatar
+                        name={p1.name}
+                        twitter={p1.twitter}
+                        size={40}
+                        className={`h-10 w-10 shrink-0 border-2 transition-colors group-hover/p1:border-primary ${isCompleted && isP1Winner ? 'border-yellow-500' : 'border-border'}`}
+                      />
+                    </div>
+
+                    {/* Score - centered */}
+                    <div className="flex items-center justify-center shrink-0 min-w-[70px] md:min-w-[90px]">
+                      {isCompleted ? (
+                        <div className="flex items-center gap-1.5 md:gap-2">
+                          <span className={`font-heading font-black text-lg md:text-2xl ${isP1Winner ? 'text-yellow-500' : 'text-muted-foreground'}`}>
+                            {m.player1_score ?? '?'}
+                          </span>
+                          <span className="text-muted-foreground text-sm md:text-base">-</span>
+                          <span className={`font-heading font-black text-lg md:text-2xl ${!isP1Winner ? 'text-yellow-500' : 'text-muted-foreground'}`}>
+                            {m.player2_score ?? '?'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground font-heading font-bold text-sm md:text-lg uppercase">vs</span>
+                      )}
+                    </div>
+
+                    {/* Player 2 - left aligned */}
+                    <div
+                      onClick={(e) => { e.stopPropagation(); navigate(`/players/${p2.id}`); }}
+                      className="flex items-center gap-2 md:gap-3 flex-1 min-w-0 justify-start cursor-pointer group/p2"
+                    >
+                      <PlayerAvatar
+                        name={p2.name}
+                        twitter={p2.twitter}
+                        size={40}
+                        className={`h-10 w-10 shrink-0 border-2 transition-colors group-hover/p2:border-primary ${isCompleted && !isP1Winner ? 'border-yellow-500' : 'border-border'}`}
+                      />
+                      <span className={`font-heading font-bold text-sm md:text-base truncate transition-colors group-hover/p2:text-primary ${isCompleted && !isP1Winner ? 'text-yellow-500' : ''}`}>
+                        {p2.name}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Event - always reserve space for consistent row height */}
+                  <div className="text-xs text-muted-foreground text-center mt-1.5 truncate h-4">
+                    {event ? event.title : 'No event'}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </Card>
       )}
 
       {filtered.length > ITEMS_PER_PAGE && (
