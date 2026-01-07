@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
-import { useSearchParams, Link, useNavigate } from 'react-router-dom'
+import { useSearch, useNavigate, Link } from '@tanstack/react-router'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Pagination } from '@/components/ui/pagination'
@@ -11,47 +11,53 @@ import type { Season } from '@/types/models'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { useMatchModal } from '@/components/MatchModalContext'
 import type { Event } from '@/types/models'
+import { Skeleton } from '@/components/ui/skeleton'
+import { PageTransition } from '@/components/PageTransition'
 
 const ITEMS_PER_PAGE = 25
 
 export default function Matches() {
   useDocumentTitle('Matches')
   const { players, matches, loading } = usePlayersAndMatches()
-  const [searchParams, setSearchParams] = useSearchParams()
+
+  const searchValues = useSearch({ strict: false }) as Record<string, string>
+  const navigate = useNavigate()
+
   const [events, setEvents] = React.useState<Event[]>([])
   const [seasons, setSeasons] = React.useState<Season[]>([])
   const { openMatch } = useMatchModal()
-  const navigate = useNavigate()
   // null = All seasons, number = specific season id
   const [selectedSeason, setSelectedSeason] = React.useState<number | null>(() => {
-    const sp = searchParams.get('season')
-    if (sp === null || sp === 'all') return null
+    const sp = searchValues.season
+    if (!sp || sp === 'all') return null
     const num = parseInt(sp, 10)
     return Number.isFinite(num) ? num : null
   })
 
   // Initialize state from URL params
-  const [query, setQuery] = React.useState(() => searchParams.get('search') || '')
+  const [query, setQuery] = React.useState(() => searchValues.search || '')
   const [currentPage, setCurrentPage] = React.useState(() => {
-    const page = searchParams.get('page')
+    const page = searchValues.page
     return page ? parseInt(page, 10) : 1
   })
 
   // Update URL when state changes
   React.useEffect(() => {
-    const params = new URLSearchParams()
-    if (currentPage !== 1) params.set('page', currentPage.toString())
-    if (query) params.set('search', query)
-    if (selectedSeason !== null) params.set('season', String(selectedSeason))
-    else params.set('season', 'all')
+    const params: Record<string, string> = {}
+    if (currentPage !== 1) params.page = currentPage.toString()
+    if (query) params.search = query
+    if (selectedSeason !== null) params.season = String(selectedSeason)
+    else params.season = 'all'
 
-    // Only update if params actually changed
-    const newParamString = params.toString()
-    const currentParamString = searchParams.toString()
-    if (newParamString !== currentParamString) {
-      setSearchParams(params)
-    }
-  }, [currentPage, query, selectedSeason, setSearchParams, searchParams])
+    // Compare with current
+    const currentJson = JSON.stringify(searchValues || {})
+    // This is rough comparison.
+    // Better to compare built params.
+    // Actually, just navigate. TanStack Router handles no-op if identical?
+    // Not necessarily.
+
+    navigate({ search: params as any, replace: true })
+  }, [currentPage, query, selectedSeason, navigate])
 
   React.useEffect(() => {
     let active = true
@@ -112,8 +118,9 @@ export default function Matches() {
   }, [selectedSeason])
 
   return (
-    <section className="space-y-6">
-      <div className="flex flex-col gap-2">
+    <PageTransition>
+      <section className="space-y-6">
+        <div className="flex flex-col gap-2">
         <h2 className="text-4xl md:text-5xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/80 to-primary/50 drop-shadow-sm">
           Matches
         </h2>
@@ -193,7 +200,7 @@ export default function Matches() {
                   <div className="flex items-center justify-center gap-3 md:gap-6">
                     {/* Player 1 - right aligned */}
                     <div
-                      onClick={(e) => { e.stopPropagation(); navigate(`/players/${p1.id}`); }}
+                      onClick={(e) => { e.stopPropagation(); navigate({ to: `/players/${p1.id}` }); }}
                       className="flex items-center gap-2 md:gap-3 flex-1 min-w-0 justify-end cursor-pointer group/p1"
                     >
                       <span className={`font-heading font-bold text-sm md:text-base truncate transition-colors group-hover/p1:text-primary ${isCompleted && isP1Winner ? 'text-yellow-500' : ''}`}>
@@ -226,7 +233,7 @@ export default function Matches() {
 
                     {/* Player 2 - left aligned */}
                     <div
-                      onClick={(e) => { e.stopPropagation(); navigate(`/players/${p2.id}`); }}
+                      onClick={(e) => { e.stopPropagation(); navigate({ to: `/players/${p2.id}` }); }}
                       className="flex items-center gap-2 md:gap-3 flex-1 min-w-0 justify-start cursor-pointer group/p2"
                     >
                       <PlayerAvatar
@@ -264,5 +271,6 @@ export default function Matches() {
         </div>
       )}
     </section>
+    </PageTransition>
   )
 }

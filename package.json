@@ -8,8 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write .",
-    "deploy": "pnpm build && gh-pages -d dist -b gh-pages"
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.0",
@@ -20,18 +19,19 @@
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-tabs": "^1.1.13",
     "@supabase/supabase-js": "^2.47.10",
+    "@tanstack/react-router": "^1.145.7",
     "boring-avatars": "^2.0.4",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.24.7",
     "highcharts": "^12.4.0",
     "highcharts-react-official": "^3.2.3",
     "lucide-react": "^0.473.0",
     "react": "^18.3.1",
     "react-day-picker": "^9.11.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.27.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7"
   },
@@ -47,7 +47,6 @@
     "eslint-plugin-react": "^7.37.1",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.12",
-    "gh-pages": "^6.1.1",
     "postcss": "^8.4.47",
     "prettier": "^3.3.3",
     "supabase": "^2.47.2",

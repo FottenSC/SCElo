@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/supabase/AuthContext'
-import { Navigate } from 'react-router-dom'
+import { Navigate } from '@tanstack/react-router'
 import PlayerManagement from '@/components/PlayerManagement'
 import EventManagement from '@/components/EventManagement'
 import MatchManagement from '@/components/MatchManagement'

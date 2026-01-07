@@ -16,7 +16,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           // Split vendor chunks
-          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-react": ["react", "react-dom", "@tanstack/react-router"],
           "vendor-radix": [
             "@radix-ui/react-avatar",
             "@radix-ui/react-dialog",

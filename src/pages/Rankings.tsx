@@ -1,10 +1,9 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
-import { useSearchParams } from 'react-router-dom'
+import { useSearch, useNavigate, Link } from '@tanstack/react-router'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { Pagination } from '@/components/ui/pagination'
-import { Link } from 'react-router-dom'
 import { usePlayersAndMatches } from '@/lib/data'
 import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
 import { Input } from '@/components/ui/input'
@@ -12,6 +11,8 @@ import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getActiveSeason, getAllSeasons, getActiveSeasonLeaderboard, getArchivedSeasonLeaderboard } from '@/lib/seasons'
 import type { Season, SeasonPlayerSnapshot } from '@/types/models'
+import { Skeleton } from '@/components/ui/skeleton'
+import { PageTransition } from '@/components/PageTransition'
 
 const ITEMS_PER_PAGE = 25
 
@@ -25,7 +26,22 @@ function format(num: number, digits = 0) {
 export default function Rankings() {
   useDocumentTitle('Leaderboard')
   const { players, matches, loading, error } = usePlayersAndMatches()
-  const [searchParams, setSearchParams] = useSearchParams()
+
+  const searchValues = useSearch({ strict: false })
+  const navigate = useNavigate()
+
+  const searchParams = useMemo(() => {
+    const p = new URLSearchParams()
+    Object.entries(searchValues || {}).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) p.set(k, String(v))
+    })
+    return p
+  }, [searchValues])
+
+  const setSearchParams = (newParams: URLSearchParams) => {
+    const search = Object.fromEntries(newParams.entries())
+    navigate({ search: search as any, replace: true })
+  }
 
   type SortKey = 'rating' | 'rd' | 'matches' | 'name'
 
@@ -237,7 +253,8 @@ export default function Rankings() {
   }
 
   return (
-    <section className="space-y-8">
+    <PageTransition>
+      <section className="space-y-8">
       <div className="flex items-center justify-between border-b border-primary/30 pb-4">
         <h1 className="text-4xl font-heading font-bold text-primary drop-shadow-[0_0_10px_rgba(234,179,8,0.3)] uppercase tracking-widest">
           Leaderboard
@@ -378,7 +395,7 @@ export default function Rankings() {
                             <td className="py-3 px-4">
                               <Link
                                 className="flex items-center gap-3 group/link"
-                                to={`/players/${player.id}`}
+                                to="/players/$id" params={{ id: String(player.id) }}
                               >
                                 <div className="relative">
                                   <div className={`absolute inset-0 rounded-full blur-sm opacity-0 group-hover/link:opacity-100 transition-opacity ${!displayData.isAllSeasons && displayRank === 1 ? 'bg-yellow-500/50' : 'bg-primary/30'
@@ -436,5 +453,6 @@ export default function Rankings() {
         />
       )}
     </section>
+    </PageTransition>
   )
 }

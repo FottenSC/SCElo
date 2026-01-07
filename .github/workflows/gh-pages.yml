@@ -1,8 +1,0 @@
-name: deprecated-gh-pages
-on:
-  workflow_dispatch:
-jobs:
-  no-op:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "This workflow is deprecated. Use deploy.yml instead."

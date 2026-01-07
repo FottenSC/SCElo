@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Clean up the URL hash after successful authentication
       if (newSession && window.location.hash.includes('access_token')) {
-        window.location.hash = '#/'
+        window.history.replaceState(null, '', window.location.pathname)
       }
     })
     return () => {

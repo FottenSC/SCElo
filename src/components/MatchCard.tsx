@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from '@tanstack/react-router'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
 import { formatRatingChange } from '@/lib/predictions'
@@ -48,7 +48,7 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
             {showLinksInHeader && hasLinks && (
               <>
                 {showEventLink && event && (
-                  <Link className="text-primary hover:text-primary/80 hover:underline inline-flex items-center gap-1 font-heading font-bold tracking-wide transition-colors" to={`/events/${event.id}`}>
+                  <Link className="text-primary hover:text-primary/80 hover:underline inline-flex items-center gap-1 font-heading font-bold tracking-wide transition-colors" to="/events/$id" params={{ id: String(event.id) }}>
                     {event.title}
                   </Link>
                 )}
@@ -101,7 +101,7 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
             className={`h-12 w-12 shrink-0 border-2 ${isCompleted && isP1Winner ? 'border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]' : 'border-border'}`}
           />
           <div className="min-w-0">
-            <Link to={`/players/${player1.id}`} className="group/player">
+            <Link to="/players/$id" params={{ id: String(player1.id) }} className="group/player">
               <div className={`font-heading font-bold text-lg flex items-center gap-2 flex-wrap transition-colors ${isCompleted && isP1Winner ? 'text-yellow-500' : 'text-foreground group-hover/player:text-primary'}`}>
                 {isCompleted && isP1Winner && <span className="text-yellow-500">👑</span>}
                 <span className="truncate">{player1.name}</span>
@@ -152,7 +152,7 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
             className={`h-12 w-12 shrink-0 border-2 ${isCompleted && !isP1Winner ? 'border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]' : 'border-border'}`}
           />
           <div className="min-w-0">
-            <Link to={`/players/${player2.id}`} className="group/player">
+            <Link to="/players/$id" params={{ id: String(player2.id) }} className="group/player">
               <div className={`font-heading font-bold text-lg flex items-center gap-2 flex-wrap transition-colors ${isCompleted && !isP1Winner ? 'text-yellow-500' : 'text-foreground group-hover/player:text-primary'}`}>
                 {isCompleted && !isP1Winner && <span className="text-yellow-500">👑</span>}
                 <span className="truncate">{player2.name}</span>
@@ -175,7 +175,7 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
       {!showLinksInHeader && !showMatchNumber && hasLinks && (
         <div className="flex items-center justify-center gap-4 text-xs font-bold uppercase tracking-wider text-muted-foreground border-t border-white/5 pt-3 mt-2">
           {showEventLink && event && (
-            <Link className="text-primary hover:text-primary/80 hover:underline inline-flex items-center gap-1 transition-colors" to={`/events/${event.id}`}>
+            <Link className="text-primary hover:text-primary/80 hover:underline inline-flex items-center gap-1 transition-colors" to="/events/$id" params={{ id: String(event.id) }}>
               Event: {event.title}
             </Link>
           )}

@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
-import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { useParams, Link, useNavigate } from '@tanstack/react-router'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
@@ -15,6 +15,8 @@ import { supabase } from '@/supabase/client'
 import type { Event, RatingEvent, Season, Match } from '@/types/models'
 import { getAllSeasons } from '@/lib/seasons'
 import { Combobox } from '@/components/ui/combobox'
+import { Skeleton } from '@/components/ui/skeleton'
+import { PageTransition } from '@/components/PageTransition'
 
 const ITEMS_PER_PAGE = 20
 
@@ -26,7 +28,7 @@ function format(num: number, digits = 0) {
 }
 
 export default function Player() {
-  const { id } = useParams()
+  const { id } = useParams({ strict: false })
   const playerId = id ? parseInt(id) : NaN
   const [currentPage, setCurrentPage] = useState(1)
   const { openMatch } = useMatchModal()
@@ -323,8 +325,9 @@ export default function Player() {
   }, [selectedSeason, opponentSearch])
 
   return (
-    <section className="space-y-8">
-      <div className="flex items-center justify-between border-b border-primary/30 pb-4">
+    <PageTransition>
+      <section className="space-y-8">
+        <div className="flex items-center justify-between border-b border-primary/30 pb-4">
         <div className="flex items-center gap-4">
           <Link className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-heading uppercase tracking-wider" to="/players">
             <span>←</span> Back to Roster
@@ -577,7 +580,7 @@ export default function Player() {
                         <div className="flex items-center gap-3 min-w-0">
                           {opp ? (
                             <div
-                              onClick={(e) => { e.stopPropagation(); navigate(`/players/${oppId}`); }}
+                              onClick={(e) => { e.stopPropagation(); navigate({ to: '/players/$id', params: { id: String(oppId) } }); }}
                               className="flex items-center gap-3 min-w-0 cursor-pointer hover:text-primary transition-colors"
                             >
                               <PlayerAvatar
@@ -633,7 +636,7 @@ export default function Player() {
                           {/* Opponent Avatar & Name */}
                           {opp ? (
                             <div
-                              onClick={(e) => { e.stopPropagation(); navigate(`/players/${oppId}`); }}
+                              onClick={(e) => { e.stopPropagation(); navigate({ to: '/players/$id', params: { id: String(oppId) } }); }}
                               className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
                             >
                               <PlayerAvatar
@@ -702,6 +705,7 @@ export default function Player() {
           </Card>
         </>
       )}
-    </section>
+      </section>
+    </PageTransition>
   )
 }

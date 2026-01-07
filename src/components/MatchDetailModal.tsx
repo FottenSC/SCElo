@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from '@tanstack/react-router'
 import {
   Dialog,
   DialogContent,
@@ -271,7 +271,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                 <>
                   <Link
                     className="group flex flex-col items-center"
-                    to={`/players/${p1.id}`}
+                    to="/players/$id" params={{ id: String(p1.id) }}
                     onClick={() => onOpenChange(false)}
                   >
                     <div className="relative">
@@ -345,7 +345,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                 <>
                   <Link
                     className="group flex flex-col items-center"
-                    to={`/players/${p2.id}`}
+                    to="/players/$id" params={{ id: String(p2.id) }}
                     onClick={() => onOpenChange(false)}
                   >
                     <div className="relative">
@@ -424,7 +424,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                     <span className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-heading">Event</span>
                     <Link
                       className="text-primary hover:text-primary/80 hover:underline font-bold text-xs sm:text-sm transition-colors max-w-[100px] sm:max-w-none truncate"
-                      to={`/events/${match.event_id}`}
+                      to="/events/$id" params={{ id: String(match.event_id) }}
                       onClick={() => onOpenChange(false)}
                     >
                       {eventTitle ?? 'Loading...'}

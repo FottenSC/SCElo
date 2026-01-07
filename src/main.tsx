@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { HashRouter } from 'react-router-dom'
-import App from './pages/App'
+import { RouterProvider } from '@tanstack/react-router'
+import { router } from './router'
 import './index.css'
 import { AuthProvider } from '@/supabase/AuthContext'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -12,9 +12,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <AuthProvider>
       <ThemeProvider defaultTheme="dark" storageKey="scelo-theme">
         <AvatarCacheProvider>
-          <HashRouter>
-            <App />
-          </HashRouter>
+          <RouterProvider router={router} />
         </AvatarCacheProvider>
       </ThemeProvider>
     </AuthProvider>
