@@ -255,204 +255,204 @@ export default function Rankings() {
   return (
     <PageTransition>
       <section className="space-y-8">
-      <div className="flex items-center justify-between border-b border-primary/30 pb-4">
-        <h1 className="text-4xl font-heading font-bold text-primary drop-shadow-[0_0_10px_rgba(234,179,8,0.3)] uppercase tracking-widest">
-          Leaderboard
-        </h1>
-        <div className="h-1 w-24 bg-primary/50 rounded-full" />
-      </div>
-
-      {loading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="flex items-center justify-between border-b border-primary/30 pb-4">
+          <h1 className="text-4xl font-heading font-bold text-primary drop-shadow-[0_0_10px_rgba(234,179,8,0.3)] uppercase tracking-widest">
+            Leaderboard
+          </h1>
+          <div className="h-1 w-24 bg-primary/50 rounded-full" />
         </div>
-      )}
 
-      {error && (
-        <div className="text-destructive text-center py-8 font-heading">
-          Error loading data: {error}
-        </div>
-      )}
-
-      {!loading && !error && (
-        <>
-          <div className="flex flex-col md:flex-row items-center gap-4 bg-card/50 p-4 rounded-lg border border-border/30 backdrop-blur-sm">
-            <div className="w-full md:w-auto flex-1">
-              <Select value={selectedSeason === null ? 'all' : selectedSeason.toString()} onValueChange={(val) => setSelectedSeason(val === 'all' ? null : parseInt(val, 10))}>
-                <SelectTrigger className="w-full bg-background/50 border-primary/30 focus:ring-primary/50">
-                  <SelectValue placeholder="Select a season" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    All seasons
-                  </SelectItem>
-                  {seasons.filter(s => s.status === 'active').map(season => (
-                    <SelectItem key={season.id} value={season.id.toString()}>
-                      {season.name}
-                    </SelectItem>
-                  ))}
-                  {seasons.filter(s => s.status === 'archived').sort((a, b) => a.id - b.id).map(season => (
-                    <SelectItem key={season.id} value={season.id.toString()}>
-                      {season.name} (Archived)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="w-full md:w-auto flex-1">
-              <Input
-                placeholder="Search for player…"
-                value={search}
-                onChange={(e) => { setCurrentPage(1); setSearch(e.target.value) }}
-                className="w-full bg-background/50 border-primary/30 focus:ring-primary/50"
-              />
-            </div>
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
+        )}
 
-          {seasonLoading && <p className="text-muted-foreground text-center italic">Loading season data...</p>}
+        {error && (
+          <div className="text-destructive text-center py-8 font-heading">
+            Error loading data: {error}
+          </div>
+        )}
 
-          <Card className="bg-card/80 backdrop-blur-md border-border/60 shadow-lg overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-            <CardHeader className="border-b border-border/30 bg-muted/20">
-              <CardTitle className="font-heading uppercase tracking-widest text-lg flex items-center gap-2">
-                <span className="text-primary">⚔️</span> Current Standings
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-left text-muted-foreground bg-muted/30 font-heading uppercase tracking-wider text-xs">
-                    <tr>
-                      {!displayData.isAllSeasons && (
-                        <th className="py-3 px-4 w-20 text-center">Rank</th>
-                      )}
-                      <th className="py-3 px-4">
-                        <button className="inline-flex items-center gap-1 hover:text-primary transition-colors" onClick={() => toggleSort('name')}>
-                          <span className="hidden sm:inline">Warrior</span>
-                          <span className="sm:hidden">Name</span>
-                          {sortBy === 'name' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} className="opacity-50" />}
-                        </button>
-                      </th>
-                      {!displayData.isAllSeasons && (
-                        <th className="py-3 px-4 text-right">
-                          <button className="inline-flex items-center gap-1 hover:text-primary transition-colors ml-auto" onClick={() => toggleSort('rating')}>
-                            <span className="hidden sm:inline">Rating</span>
-                            <span className="sm:hidden">Rtng</span>
-                            {sortBy === 'rating' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} className="opacity-50" />}
-                          </button>
-                        </th>
-                      )}
-                      {!displayData.isAllSeasons && (
-                        <th className="py-3 px-4 text-right hidden sm:table-cell">
-                          <button
-                            className="inline-flex items-center gap-1 hover:text-primary transition-colors ml-auto"
-                            onClick={() => toggleSort('rd')}
-                            title="Rating Deviation"
-                          >
-                            <span>Deviation</span>
-                            {sortBy === 'rd' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} className="opacity-50" />}
-                          </button>
-                        </th>
-                      )}
-                      <th className="py-3 px-4 text-right hidden sm:table-cell">
-                        <button className="inline-flex items-center gap-1 hover:text-primary transition-colors ml-auto" onClick={() => toggleSort('matches')}>
-                          <span>Battles</span>
-                          {sortBy === 'matches' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} className="opacity-50" />}
-                        </button>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/20">
-                    {sortedPlayers.length === 0 ? (
-                      <tr>
-                        <td colSpan={displayData.isAllSeasons ? 2 : 5} className="py-12 text-center text-muted-foreground font-heading italic">
-                          {search ? `No warriors found matching "${search}"` : 'No warriors found.'}
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedPlayers.map((player, i) => {
-                        const displayRank = getDisplayRank(i)
-                        const totalMatches = playerMatchCounts.get(player.id) ?? 0
-                        const isTop3 = !displayData.isAllSeasons && displayRank <= 3
-
-                        return (
-                          <tr
-                            className={`group transition-colors hover:bg-primary/5 ${isTop3 ? 'bg-primary/5' : ''}`}
-                            key={player.id}
-                          >
-                            {!displayData.isAllSeasons && (
-                              <td className="py-3 px-4 text-center">
-                                <div className={`font-heading font-bold text-base ${displayRank === 1 ? 'text-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]' :
-                                  displayRank === 2 ? 'text-gray-300 drop-shadow-[0_0_5px_rgba(209,213,219,0.5)]' :
-                                    displayRank === 3 ? 'text-amber-700 drop-shadow-[0_0_5px_rgba(180,83,9,0.5)]' :
-                                      'text-muted-foreground'
-                                  }`}>
-                                  #{displayRank}
-                                </div>
-                              </td>
-                            )}
-                            <td className="py-3 px-4">
-                              <Link
-                                className="flex items-center gap-3 group/link"
-                                to="/players/$id" params={{ id: String(player.id) }}
-                              >
-                                <div className="relative">
-                                  <div className={`absolute inset-0 rounded-full blur-sm opacity-0 group-hover/link:opacity-100 transition-opacity ${!displayData.isAllSeasons && displayRank === 1 ? 'bg-yellow-500/50' : 'bg-primary/30'
-                                    }`} />
-                                  <PlayerAvatar
-                                    name={player.name}
-                                    twitter={player.twitter}
-                                    size={40}
-                                    className={`h-10 w-10 border-2 relative z-10 transition-colors ${displayData.isAllSeasons ? 'border-border group-hover/link:border-primary' :
-                                      displayRank === 1 ? 'border-yellow-500' :
-                                        displayRank === 2 ? 'border-gray-300' :
-                                          displayRank === 3 ? 'border-amber-700' :
-                                            'border-border group-hover/link:border-primary'
-                                      }`}
-                                  />
-                                </div>
-                                <span className={`font-heading font-bold text-base transition-colors ${!displayData.isAllSeasons && displayRank <= 3 ? 'text-foreground' : 'text-foreground/90 group-hover/link:text-primary'
-                                  }`}>
-                                  {player.name}
-                                </span>
-                              </Link>
-                            </td>
-                            {!displayData.isAllSeasons && (
-                              <td className="py-3 px-4 text-right font-mono font-bold text-lg text-primary">
-                                {format(player.rating ?? 0, 0)}
-                              </td>
-                            )}
-                            {!displayData.isAllSeasons && (
-                              <td className="py-3 px-4 text-right hidden sm:table-cell text-muted-foreground font-mono">
-                                {format(player.rd ?? 0, 0)}
-                              </td>
-                            )}
-                            <td className="py-3 px-4 text-right hidden sm:table-cell text-foreground font-bold">
-                              {totalMatches}
-                            </td>
-                          </tr>
-                        )
-                      })
-                    )}
-                  </tbody>
-                </table>
+        {!loading && !error && (
+          <>
+            <div className="flex flex-col md:flex-row items-center gap-4 bg-card/50 p-4 rounded-lg border border-border/30 backdrop-blur-sm">
+              <div className="w-full md:w-auto flex-1">
+                <Select value={selectedSeason === null ? 'all' : selectedSeason.toString()} onValueChange={(val) => setSelectedSeason(val === 'all' ? null : parseInt(val, 10))}>
+                  <SelectTrigger className="w-full bg-background/50 border-primary/30 focus:ring-primary/50">
+                    <SelectValue placeholder="Select a season" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      All seasons
+                    </SelectItem>
+                    {seasons.filter(s => s.status === 'active').map(season => (
+                      <SelectItem key={season.id} value={season.id.toString()}>
+                        {season.name}
+                      </SelectItem>
+                    ))}
+                    {seasons.filter(s => s.status === 'archived').sort((a, b) => a.id - b.id).map(season => (
+                      <SelectItem key={season.id} value={season.id.toString()}>
+                        {season.name} (Archived)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </CardContent>
-          </Card>
-        </>
-      )}
 
-      {!loading && sortedPlayers.length > ITEMS_PER_PAGE && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          itemsPerPage={ITEMS_PER_PAGE}
-          totalItems={sortedPlayers.length}
-        />
-      )}
-    </section>
+              <div className="w-full md:w-auto flex-1">
+                <Input
+                  placeholder="Search for player…"
+                  value={search}
+                  onChange={(e) => { setCurrentPage(1); setSearch(e.target.value) }}
+                  className="w-full bg-background/50 border-primary/30 focus:ring-primary/50"
+                />
+              </div>
+            </div>
+
+            {seasonLoading && <p className="text-muted-foreground text-center italic">Loading season data...</p>}
+
+            <Card className="bg-card/80 backdrop-blur-md border-border/60 shadow-lg overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+              <CardHeader className="border-b border-border/30 bg-muted/20">
+                <CardTitle className="font-heading uppercase tracking-widest text-lg flex items-center gap-2">
+                  <span className="text-primary">⚔️</span> Current Standings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="text-left text-muted-foreground bg-muted/30 font-heading uppercase tracking-wider text-xs">
+                      <tr>
+                        {!displayData.isAllSeasons && (
+                          <th className="py-3 px-4 w-20 text-center">Rank</th>
+                        )}
+                        <th className="py-3 px-4">
+                          <button className="inline-flex items-center gap-1 hover:text-primary transition-colors" onClick={() => toggleSort('name')}>
+                            <span className="hidden sm:inline">Warrior</span>
+                            <span className="sm:hidden">Name</span>
+                            {sortBy === 'name' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} className="opacity-50" />}
+                          </button>
+                        </th>
+                        {!displayData.isAllSeasons && (
+                          <th className="py-3 px-4 text-right">
+                            <button className="inline-flex items-center gap-1 hover:text-primary transition-colors ml-auto" onClick={() => toggleSort('rating')}>
+                              <span className="hidden sm:inline">Rating</span>
+                              <span className="sm:hidden">Rtng</span>
+                              {sortBy === 'rating' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} className="opacity-50" />}
+                            </button>
+                          </th>
+                        )}
+                        {!displayData.isAllSeasons && (
+                          <th className="py-3 px-4 text-right hidden sm:table-cell">
+                            <button
+                              className="inline-flex items-center gap-1 hover:text-primary transition-colors ml-auto"
+                              onClick={() => toggleSort('rd')}
+                              title="Rating Deviation"
+                            >
+                              <span>Deviation</span>
+                              {sortBy === 'rd' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} className="opacity-50" />}
+                            </button>
+                          </th>
+                        )}
+                        <th className="py-3 px-4 text-right hidden sm:table-cell">
+                          <button className="inline-flex items-center gap-1 hover:text-primary transition-colors ml-auto" onClick={() => toggleSort('matches')}>
+                            <span>Battles</span>
+                            {sortBy === 'matches' ? (sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} className="opacity-50" />}
+                          </button>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/20">
+                      {sortedPlayers.length === 0 ? (
+                        <tr>
+                          <td colSpan={displayData.isAllSeasons ? 2 : 5} className="py-12 text-center text-muted-foreground font-heading italic">
+                            {search ? `No warriors found matching "${search}"` : 'No warriors found.'}
+                          </td>
+                        </tr>
+                      ) : (
+                        paginatedPlayers.map((player, i) => {
+                          const displayRank = getDisplayRank(i)
+                          const totalMatches = playerMatchCounts.get(player.id) ?? 0
+                          const isTop3 = !displayData.isAllSeasons && displayRank <= 3
+
+                          return (
+                            <tr
+                              className={`group transition-colors hover:bg-primary/5 ${isTop3 ? 'bg-primary/5' : ''}`}
+                              key={player.id}
+                            >
+                              {!displayData.isAllSeasons && (
+                                <td className="py-3 px-4 text-center">
+                                  <div className={`font-heading font-bold text-base ${displayRank === 1 ? 'text-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]' :
+                                    displayRank === 2 ? 'text-gray-300 drop-shadow-[0_0_5px_rgba(209,213,219,0.5)]' :
+                                      displayRank === 3 ? 'text-amber-700 drop-shadow-[0_0_5px_rgba(180,83,9,0.5)]' :
+                                        'text-muted-foreground'
+                                    }`}>
+                                    #{displayRank}
+                                  </div>
+                                </td>
+                              )}
+                              <td className="py-3 px-4">
+                                <Link
+                                  className="flex items-center gap-3 group/link"
+                                  to="/players/$id" params={{ id: String(player.id) }}
+                                >
+                                  <div className="relative">
+                                    <div className={`absolute inset-0 rounded-full blur-sm opacity-0 group-hover/link:opacity-100 transition-opacity ${!displayData.isAllSeasons && displayRank === 1 ? 'bg-yellow-500/50' : 'bg-primary/30'
+                                      }`} />
+                                    <PlayerAvatar
+                                      name={player.name}
+                                      twitter={player.twitter}
+                                      size={40}
+                                      className={`h-10 w-10 border-2 relative z-10 transition-colors ${displayData.isAllSeasons ? 'border-border group-hover/link:border-primary' :
+                                        displayRank === 1 ? 'border-yellow-500' :
+                                          displayRank === 2 ? 'border-gray-300' :
+                                            displayRank === 3 ? 'border-amber-700' :
+                                              'border-border group-hover/link:border-primary'
+                                        }`}
+                                    />
+                                  </div>
+                                  <span className={`font-heading font-bold text-base transition-colors ${!displayData.isAllSeasons && displayRank <= 3 ? 'text-foreground' : 'text-foreground/90 group-hover/link:text-primary'
+                                    }`}>
+                                    {player.name}
+                                  </span>
+                                </Link>
+                              </td>
+                              {!displayData.isAllSeasons && (
+                                <td className="py-3 px-4 text-right font-mono font-bold text-lg text-primary">
+                                  {format(player.rating ?? 0, 0)}
+                                </td>
+                              )}
+                              {!displayData.isAllSeasons && (
+                                <td className="py-3 px-4 text-right hidden sm:table-cell text-muted-foreground font-mono">
+                                  {format(player.rd ?? 0, 0)}
+                                </td>
+                              )}
+                              <td className="py-3 px-4 text-right hidden sm:table-cell text-foreground font-bold">
+                                {totalMatches}
+                              </td>
+                            </tr>
+                          )
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {!loading && sortedPlayers.length > ITEMS_PER_PAGE && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={ITEMS_PER_PAGE}
+            totalItems={sortedPlayers.length}
+          />
+        )}
+      </section>
     </PageTransition>
   )
 }

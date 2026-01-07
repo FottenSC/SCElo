@@ -20,26 +20,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true
-    ;(async () => {
-      const { data } = await supabase.auth.getSession()
-      if (!active) return
-      setSession(data.session)
-      
-      // Check admin status from app_metadata
-      if (data.session?.user) {
-        const appMetadata = data.session.user.app_metadata as { role?: string }
-        if (active) {
-          setIsAdmin(appMetadata?.role === 'admin')
+      ; (async () => {
+        const { data } = await supabase.auth.getSession()
+        if (!active) return
+        setSession(data.session)
+
+        // Check admin status from app_metadata
+        if (data.session?.user) {
+          const appMetadata = data.session.user.app_metadata as { role?: string }
+          if (active) {
+            setIsAdmin(appMetadata?.role === 'admin')
+          }
+        } else {
+          setIsAdmin(false)
         }
-      } else {
-        setIsAdmin(false)
-      }
-      
-      setLoading(false)
-    })()
+
+        setLoading(false)
+      })()
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       setSession(newSession)
-      
+
       // Check admin status on auth change from app_metadata
       if (newSession?.user) {
         const appMetadata = newSession.user.app_metadata as { role?: string }
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setIsAdmin(false)
       }
-      
+
       // Clean up the URL hash after successful authentication
       if (newSession && window.location.hash.includes('access_token')) {
         window.history.replaceState(null, '', window.location.pathname)
@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const redirectTo = 'https://ofc.horseface.no/'
         await supabase.auth.signInWithOAuth({
           provider: 'github',
-          options: { 
+          options: {
             redirectTo,
             skipBrowserRedirect: false
           },
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const redirectTo = 'https://ofc.horseface.no/'
         await supabase.auth.signInWithOAuth({
           provider: 'twitter',
-          options: { 
+          options: {
             redirectTo,
             skipBrowserRedirect: false
           },
