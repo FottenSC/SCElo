@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { RouterProvider } from '@tanstack/react-router'
 import { router } from './router'
 import './index.css'
-import { AuthProvider } from '@/supabase/AuthContext'
+import { AuthProvider } from '@/supabase/AuthProvider'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AvatarCacheProvider } from '@/components/AvatarCacheContext'
 

@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
     </div>
   )
 } { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useAuth } from '@/supabase/AuthContext'
+import { useAuth } from '@/supabase/useAuth'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '@/supabase/client'
 import PlayerManagement from '@/components/PlayerManagement'

@@ -1,7 +1,7 @@
 import { Link, Outlet } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { useAuth } from '@/supabase/AuthContext'
+import { useAuth } from '@/supabase/useAuth'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { MatchModalProvider, useMatchModal } from '@/components/MatchModalContext'
 import { MatchDetailModal } from '@/components/MatchDetailModal'
