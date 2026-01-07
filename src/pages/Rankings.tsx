@@ -262,55 +262,89 @@ export default function Rankings() {
           <div className="h-1 w-24 bg-primary/50 rounded-full" />
         </div>
 
-        {loading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        )}
 
-        {error && (
-          <div className="text-destructive text-center py-8 font-heading">
-            Error loading data: {error}
+        <div className="flex flex-col md:flex-row items-center gap-4 bg-card/50 p-4 rounded-lg border border-border/30 backdrop-blur-sm">
+          <div className="w-full md:w-auto flex-1">
+            <Select value={selectedSeason === null ? 'all' : selectedSeason?.toString()} onValueChange={(val) => setSelectedSeason(val === 'all' ? null : parseInt(val, 10))}>
+              <SelectTrigger className="w-full bg-background/50 border-primary/30 focus:ring-primary/50">
+                <SelectValue placeholder="Select a season" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  All seasons
+                </SelectItem>
+                {seasons.filter(s => s.status === 'active').map(season => (
+                  <SelectItem key={season.id} value={season.id.toString()}>
+                    {season.name}
+                  </SelectItem>
+                ))}
+                {seasons.filter(s => s.status === 'archived').sort((a, b) => a.id - b.id).map(season => (
+                  <SelectItem key={season.id} value={season.id.toString()}>
+                    {season.name} (Archived)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        )}
 
-        {!loading && !error && (
+          <div className="w-full md:w-auto flex-1">
+            <Input
+              placeholder="Search for player…"
+              value={search}
+              onChange={(e) => { setCurrentPage(1); setSearch(e.target.value) }}
+              className="w-full bg-background/50 border-primary/30 focus:ring-primary/50"
+            />
+          </div>
+        </div>
+
+        {loading || seasonLoading ? (
+          <div className="space-y-4">
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-muted/20">
+                      <th className="p-4 w-16"><Skeleton className="h-4 w-8" /></th>
+                      <th className="p-4"><Skeleton className="h-4 w-24" /></th>
+                      <th className="p-4 text-right hidden sm:table-cell"><Skeleton className="h-4 w-16 ml-auto" /></th>
+                      <th className="p-4 text-right"><Skeleton className="h-4 w-16 ml-auto" /></th>
+                      <th className="p-4 text-right hidden md:table-cell"><Skeleton className="h-4 w-16 ml-auto" /></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: 15 }).map((_, i) => (
+                      <tr key={i} className="border-b border-white/5 last:border-0">
+                        <td className="p-4 font-heading font-bold text-muted-foreground/50">
+                          <Skeleton className="h-6 w-8" />
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <Skeleton className="h-10 w-10 rounded-full" />
+                            <div className="space-y-1.5">
+                              <Skeleton className="h-4 w-32" />
+                              <Skeleton className="h-3 w-16 sm:hidden" />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4 text-right font-mono text-muted-foreground hidden sm:table-cell">
+                          <Skeleton className="h-4 w-12 ml-auto" />
+                        </td>
+                        <td className="p-4 text-right">
+                          <Skeleton className="h-6 w-16 ml-auto" />
+                        </td>
+                        <td className="p-4 text-right text-muted-foreground font-mono hidden md:table-cell">
+                          <Skeleton className="h-4 w-12 ml-auto" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+        ) : (
+
           <>
-            <div className="flex flex-col md:flex-row items-center gap-4 bg-card/50 p-4 rounded-lg border border-border/30 backdrop-blur-sm">
-              <div className="w-full md:w-auto flex-1">
-                <Select value={selectedSeason === null ? 'all' : selectedSeason.toString()} onValueChange={(val) => setSelectedSeason(val === 'all' ? null : parseInt(val, 10))}>
-                  <SelectTrigger className="w-full bg-background/50 border-primary/30 focus:ring-primary/50">
-                    <SelectValue placeholder="Select a season" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      All seasons
-                    </SelectItem>
-                    {seasons.filter(s => s.status === 'active').map(season => (
-                      <SelectItem key={season.id} value={season.id.toString()}>
-                        {season.name}
-                      </SelectItem>
-                    ))}
-                    {seasons.filter(s => s.status === 'archived').sort((a, b) => a.id - b.id).map(season => (
-                      <SelectItem key={season.id} value={season.id.toString()}>
-                        {season.name} (Archived)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="w-full md:w-auto flex-1">
-                <Input
-                  placeholder="Search for player…"
-                  value={search}
-                  onChange={(e) => { setCurrentPage(1); setSearch(e.target.value) }}
-                  className="w-full bg-background/50 border-primary/30 focus:ring-primary/50"
-                />
-              </div>
-            </div>
-
-            {seasonLoading && <p className="text-muted-foreground text-center italic">Loading season data...</p>}
 
             <Card className="bg-card/80 backdrop-blur-md border-border/60 shadow-lg overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />

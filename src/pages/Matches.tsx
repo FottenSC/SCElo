@@ -129,12 +129,6 @@ export default function Matches() {
           </p>
         </div>
 
-        {loading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        )}
-
         <div className="flex flex-col sm:flex-row gap-4 sm:items-center bg-card/30 p-4 rounded-lg border border-border/40 backdrop-blur-sm">
           <div className="max-w-md w-full">
             <Input
@@ -168,7 +162,39 @@ export default function Matches() {
           </div>
         </div>
 
-        {paginatedMatches.length === 0 ? (
+        {loading ? (
+          <Card className="bg-card/50 backdrop-blur-sm border-border/50 overflow-hidden">
+            <div className="divide-y divide-border/30">
+              {Array.from({ length: 15 }).map((_, i) => (
+                <div key={i} className="px-4 py-3 w-full">
+                  <div className="flex items-center justify-center gap-3 md:gap-6">
+                    {/* Player 1 Skeleton */}
+                    <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0 justify-end">
+                      <Skeleton className="h-4 w-20 md:w-32" />
+                      <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                    </div>
+
+                    {/* Score Skeleton */}
+                    <div className="flex items-center justify-center shrink-0 min-w-[70px] md:min-w-[90px]">
+                      <Skeleton className="h-6 w-12" />
+                    </div>
+
+                    {/* Player 2 Skeleton */}
+                    <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0 justify-start">
+                      <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                      <Skeleton className="h-4 w-20 md:w-32" />
+                    </div>
+                  </div>
+
+                  {/* Event Skeleton */}
+                  <div className="flex justify-center mt-1.5">
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        ) : paginatedMatches.length === 0 ? (
           <Card className="bg-card/40 backdrop-blur-sm border-border/40">
             <CardContent className="py-12 flex flex-col items-center justify-center text-center">
               <div className="text-4xl mb-4">🔍</div>
