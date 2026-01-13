@@ -131,7 +131,7 @@ export function usePlayersAndMatches() {
       try {
         const [p, m] = await Promise.all([
           fetchPlayers(),
-          fetchCompletedMatches(),
+          fetchAllCompletedMatches(),
         ]);
         if (!active) return;
         setPlayers(p);

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { Pagination } from '@/components/ui/pagination'
-import { usePlayersAndMatches, fetchEvents, fetchAllCompletedMatches } from '@/lib/data'
+import { usePlayersAndMatches, fetchEvents } from '@/lib/data'
 import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
 import { formatRatingChange } from '@/lib/predictions'
 import { useMatchModal } from '@/components/MatchModalContext'
@@ -35,9 +35,7 @@ export default function Player() {
   const { openMatch } = useMatchModal()
   const [ratingMatchEvents, setRatingMatchEvents] = useState<RatingEvent[]>([])
 
-  const { players, matches: activeSeasonMatches, loading: playersLoading } = usePlayersAndMatches()
-  const [allMatches, setAllMatches] = useState<Match[]>([])
-  const [matchesLoading, setMatchesLoading] = useState(true)
+  const { players, matches: allMatches, loading: playersLoading } = usePlayersAndMatches()
   const [events, setEvents] = useState<Event[]>([])
   const [seasons, setSeasons] = useState<Season[]>([])
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null)
@@ -65,18 +63,6 @@ export default function Player() {
         if (activeSeason) {
           setSelectedSeason(activeSeason.id)
         }
-      })()
-    return () => { active = false }
-  }, [])
-
-  useEffect(() => {
-    let active = true
-      ; (async () => {
-        setMatchesLoading(true)
-        const allCompletedMatches = await fetchAllCompletedMatches()
-        if (!active) return
-        setAllMatches(allCompletedMatches)
-        setMatchesLoading(false)
       })()
     return () => { active = false }
   }, [])
