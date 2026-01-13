@@ -11,6 +11,7 @@ import { usePlayersAndMatches, fetchEvents } from '@/lib/data'
 import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
 import { ArrowUp, ArrowDown, Youtube, ExternalLink } from 'lucide-react'
 import { supabase } from '@/supabase/client'
+import { slugify } from '@/lib/utils'
 
 interface MatchDetailModalProps {
   matchId: number | null
@@ -271,7 +272,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                 <>
                   <Link
                     className="group flex flex-col items-center"
-                    to="/players/$id" params={{ id: String(p1.id) }}
+                    to="/player/$id/$username" params={{ id: String(p1.id), username: slugify(p1.name) }}
                     onClick={() => onOpenChange(false)}
                   >
                     <div className="relative">
@@ -345,7 +346,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                 <>
                   <Link
                     className="group flex flex-col items-center"
-                    to="/players/$id" params={{ id: String(p2.id) }}
+                    to="/player/$id/$username" params={{ id: String(p2.id), username: slugify(p2.name) }}
                     onClick={() => onOpenChange(false)}
                   >
                     <div className="relative">

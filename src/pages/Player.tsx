@@ -17,6 +17,7 @@ import { getAllSeasons } from '@/lib/seasons'
 import { Combobox } from '@/components/ui/combobox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageTransition } from '@/components/PageTransition'
+import { slugify } from '@/lib/utils'
 
 const ITEMS_PER_PAGE = 20
 
@@ -329,15 +330,66 @@ export default function Player() {
       <section className="space-y-8">
         <div className="flex items-center justify-between border-b border-primary/30 pb-4">
           <div className="flex items-center gap-4">
-            <Link className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-heading uppercase tracking-wider" to="/players">
+            <Link className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-heading uppercase tracking-wider" to="/rankings">
               <span>←</span> Back to Roster
             </Link>
           </div>
         </div>
 
         {playersLoading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="space-y-8 animate-pulse">
+            <div className="relative overflow-hidden rounded-lg border border-border/50 bg-card/80 backdrop-blur-md">
+              <div className="absolute top-0 left-0 w-2 h-full bg-border/50" />
+              <div className="p-6 md:p-8 flex flex-col md:flex-row gap-8 items-center md:items-start relative z-10">
+                <Skeleton className="h-32 w-32 md:h-40 md:w-40 rounded-full shrink-0" />
+                <div className="flex-1 w-full space-y-6">
+                  <div className="flex flex-col items-center md:items-start gap-2">
+                    <Skeleton className="h-12 w-64 max-w-full" />
+                    <Skeleton className="h-6 w-32" />
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 pt-4 border-t border-border/30">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="space-y-2">
+                        <Skeleton className="h-4 w-12" />
+                        <Skeleton className="h-8 w-20" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 pb-6 md:px-8 md:pb-8 relative z-10">
+                <div className="border-t border-border/30 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-24 w-full rounded-lg" />
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-14 w-14 rounded-md" />)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Skeleton className="h-[300px] w-full rounded-lg border border-border/50" />
+
+            <div className="space-y-4">
+              <div className="flex justify-between gap-4">
+                <Skeleton className="h-10 w-48" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-10 w-full md:w-48" />
+                  <Skeleton className="h-10 w-full md:w-48" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                 {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
+              </div>
+            </div>
           </div>
         )}
 
@@ -580,7 +632,7 @@ export default function Player() {
                           <div className="flex items-center gap-3 min-w-0">
                             {opp ? (
                               <div
-                                onClick={(e) => { e.stopPropagation(); navigate({ to: '/players/$id', params: { id: String(oppId) } }); }}
+                                onClick={(e) => { e.stopPropagation(); navigate({ to: '/player/$id/$username', params: { id: String(oppId), username: slugify(opp.name) } }); }}
                                 className="flex items-center gap-3 min-w-0 cursor-pointer hover:text-primary transition-colors"
                               >
                                 <PlayerAvatar
@@ -636,7 +688,7 @@ export default function Player() {
                             {/* Opponent Avatar & Name */}
                             {opp ? (
                               <div
-                                onClick={(e) => { e.stopPropagation(); navigate({ to: '/players/$id', params: { id: String(oppId) } }); }}
+                                onClick={(e) => { e.stopPropagation(); navigate({ to: '/player/$id/$username', params: { id: String(oppId), username: slugify(opp.name) } }); }}
                                 className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
                               >
                                 <PlayerAvatar

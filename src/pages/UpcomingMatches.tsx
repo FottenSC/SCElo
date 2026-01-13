@@ -9,6 +9,7 @@ import { getPlayerAvatarUrl, getPlayerInitials } from '@/lib/avatar'
 import type { Player, Event, Match } from '@/types/models'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageTransition } from '@/components/PageTransition'
+import { slugify } from '@/lib/utils'
 
 type EventWithMatches = Event & {
   matches: Array<Match & {
@@ -198,7 +199,7 @@ export function UpcomingMatches() {
 
                         <div className="flex items-center justify-between gap-4 mt-2">
                           <div className="flex items-center gap-4 flex-1">
-                            <Link to="/players/$id" params={{ id: String(player1.id) }} className="relative shrink-0 group/p1">
+                            <Link to="/player/$id/$username" params={{ id: String(player1.id), username: slugify(player1.name) }} className="relative shrink-0 group/p1">
                               <div className="absolute inset-0 bg-primary/20 rounded-full blur-md opacity-0 group-hover/p1:opacity-100 transition-opacity" />
                               <PlayerAvatar
                                 name={player1.name}
@@ -208,7 +209,7 @@ export function UpcomingMatches() {
                               />
                             </Link>
                             <div className="flex-1 min-w-0">
-                              <Link to="/players/$id" params={{ id: String(player1.id) }} className="hover:text-primary transition-colors block">
+                              <Link to="/player/$id/$username" params={{ id: String(player1.id), username: slugify(player1.name) }} className="hover:text-primary transition-colors block">
                                 <div className="font-heading font-bold text-lg leading-tight truncate">
                                   {player1.name}
                                 </div>
@@ -232,7 +233,7 @@ export function UpcomingMatches() {
                           </div>
 
                           <div className="flex items-center gap-4 flex-1 flex-row-reverse text-right">
-                            <Link to="/players/$id" params={{ id: String(player2.id) }} className="relative shrink-0 group/p2">
+                            <Link to="/player/$id/$username" params={{ id: String(player2.id), username: slugify(player2.name) }} className="relative shrink-0 group/p2">
                               <div className="absolute inset-0 bg-primary/20 rounded-full blur-md opacity-0 group-hover/p2:opacity-100 transition-opacity" />
                               <PlayerAvatar
                                 name={player2.name}
@@ -242,7 +243,7 @@ export function UpcomingMatches() {
                               />
                             </Link>
                             <div className="flex-1 min-w-0">
-                              <Link to="/players/$id" params={{ id: String(player2.id) }} className="hover:text-primary transition-colors block">
+                              <Link to="/player/$id/$username" params={{ id: String(player2.id), username: slugify(player2.name) }} className="hover:text-primary transition-colors block">
                                 <div className="font-heading font-bold text-lg leading-tight truncate">
                                   {player2.name}
                                 </div>

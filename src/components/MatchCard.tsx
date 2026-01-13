@@ -5,6 +5,7 @@ import { formatRatingChange } from '@/lib/predictions'
 import { useMatchModal } from '@/components/MatchModalContext'
 import { ExternalLink, Youtube } from 'lucide-react'
 import type { Player, Match, Event } from '@/types/models'
+import { slugify } from '@/lib/utils'
 
 // Helper function to determine if a URL is YouTube or Twitch
 function getVideoIcon(url: string) {
@@ -101,7 +102,7 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
             className={`h-12 w-12 shrink-0 border-2 ${isCompleted && isP1Winner ? 'border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]' : 'border-border'}`}
           />
           <div className="min-w-0">
-            <Link to="/players/$id" params={{ id: String(player1.id) }} className="group/player">
+            <Link to="/player/$id/$username" params={{ id: String(player1.id), username: slugify(player1.name) }} className="group/player">
               <div className={`font-heading font-bold text-lg flex items-center gap-2 flex-wrap transition-colors ${isCompleted && isP1Winner ? 'text-yellow-500' : 'text-foreground group-hover/player:text-primary'}`}>
                 {isCompleted && isP1Winner && <span className="text-yellow-500">👑</span>}
                 <span className="truncate">{player1.name}</span>
@@ -152,7 +153,7 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
             className={`h-12 w-12 shrink-0 border-2 ${isCompleted && !isP1Winner ? 'border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]' : 'border-border'}`}
           />
           <div className="min-w-0">
-            <Link to="/players/$id" params={{ id: String(player2.id) }} className="group/player">
+            <Link to="/player/$id/$username" params={{ id: String(player2.id), username: slugify(player2.name) }} className="group/player">
               <div className={`font-heading font-bold text-lg flex items-center gap-2 flex-wrap transition-colors ${isCompleted && !isP1Winner ? 'text-yellow-500' : 'text-foreground group-hover/player:text-primary'}`}>
                 {isCompleted && !isP1Winner && <span className="text-yellow-500">👑</span>}
                 <span className="truncate">{player2.name}</span>

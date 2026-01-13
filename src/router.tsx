@@ -38,7 +38,7 @@ const rankingsRoute = createRoute({
 
 const playersRedirectRoute = createRoute({
     getParentRoute: () => rootRoute,
-    path: '/players',
+    path: '/player',
     component: () => <div />, // Will redirect in beforeLoad or just be a shell, but using redirect in beforeLoad is better
     beforeLoad: () => {
         throw { redirect: { to: '/rankings', replace: true } } // Tanstack router redirect
@@ -47,7 +47,13 @@ const playersRedirectRoute = createRoute({
 
 const playerRoute = createRoute({
     getParentRoute: () => rootRoute,
-    path: '/players/$id',
+    path: '/player/$id',
+    component: Player,
+})
+
+const playerWithNameRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/player/$id/$username',
     component: Player,
 })
 
@@ -94,6 +100,7 @@ const routeTree = rootRoute.addChildren([
     rankingsRoute,
     playersRedirectRoute,
     playerRoute,
+    playerWithNameRoute,
     matchesRoute,
     eventsRoute,
     eventRoute,

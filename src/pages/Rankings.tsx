@@ -13,6 +13,7 @@ import { getActiveSeason, getAllSeasons, getActiveSeasonLeaderboard, getArchived
 import type { Season, SeasonPlayerSnapshot } from '@/types/models'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageTransition } from '@/components/PageTransition'
+import { slugify } from '@/lib/utils'
 
 const ITEMS_PER_PAGE = 25
 
@@ -429,7 +430,7 @@ export default function Rankings() {
                               <td className="py-3 px-4">
                                 <Link
                                   className="flex items-center gap-3 group/link"
-                                  to="/players/$id" params={{ id: String(player.id) }}
+                                  to="/player/$id/$username" params={{ id: String(player.id), username: slugify(player.name) }}
                                 >
                                   <div className="relative">
                                     <div className={`absolute inset-0 rounded-full blur-sm opacity-0 group-hover/link:opacity-100 transition-opacity ${!displayData.isAllSeasons && displayRank === 1 ? 'bg-yellow-500/50' : 'bg-primary/30'

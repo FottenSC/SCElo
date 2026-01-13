@@ -13,6 +13,7 @@ import { useMatchModal } from '@/components/MatchModalContext'
 import type { Event } from '@/types/models'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageTransition } from '@/components/PageTransition'
+import { slugify } from '@/lib/utils'
 
 const ITEMS_PER_PAGE = 25
 
@@ -226,7 +227,7 @@ export default function Matches() {
                     <div className="flex items-center justify-center gap-3 md:gap-6">
                       {/* Player 1 - right aligned */}
                       <div
-                        onClick={(e) => { e.stopPropagation(); navigate({ to: `/players/${p1.id}` }); }}
+                        onClick={(e) => { e.stopPropagation(); navigate({ to: '/player/$id/$username', params: { id: String(p1.id), username: slugify(p1.name) } }); }}
                         className="flex items-center gap-2 md:gap-3 flex-1 min-w-0 justify-end cursor-pointer group/p1"
                       >
                         <span className={`font-heading font-bold text-sm md:text-base truncate transition-colors group-hover/p1:text-primary ${isCompleted && isP1Winner ? 'text-yellow-500' : ''}`}>
@@ -259,7 +260,7 @@ export default function Matches() {
 
                       {/* Player 2 - left aligned */}
                       <div
-                        onClick={(e) => { e.stopPropagation(); navigate({ to: `/players/${p2.id}` }); }}
+                        onClick={(e) => { e.stopPropagation(); navigate({ to: '/player/$id/$username', params: { id: String(p2.id), username: slugify(p2.name) } }); }}
                         className="flex items-center gap-2 md:gap-3 flex-1 min-w-0 justify-start cursor-pointer group/p2"
                       >
                         <PlayerAvatar
