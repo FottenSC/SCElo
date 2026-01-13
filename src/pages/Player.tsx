@@ -387,7 +387,7 @@ export default function Player() {
                 </div>
               </div>
               <div className="space-y-2">
-                 {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
+                {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
               </div>
             </div>
           </div>
