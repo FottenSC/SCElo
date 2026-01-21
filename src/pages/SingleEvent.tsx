@@ -160,7 +160,7 @@ export default function SingleEvent() {
                     rel="noopener noreferrer"
                     className="px-6 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/25 font-heading font-bold uppercase tracking-wider text-sm text-center flex items-center justify-center gap-2"
                   >
-                    <span className="text-lg">📺</span> {isPastEvent ? 'Stream VOD' : 'Watch Stream'}
+                    <span className="text-lg">📺</span> Watch Stream
                   </a>
                 )}
                 {event.vod_link && (

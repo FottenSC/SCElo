@@ -210,6 +210,7 @@ export default function MatchManagement() {
       // 1. Creating a new match with a result
       // 2. Updating an existing match with a result AND the winner changed
       // We no longer recalculate on score changes alone
+      const wasCompleted = editingMatch?.winner_id != null
       const newMatchWithResult = !editingMatch && hasResult
       const existingMatchWinnerChanged = editingMatch && hasResult && editingMatch.winner_id !== matchData.winner_id
       
