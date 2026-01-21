@@ -213,7 +213,7 @@ export default function MatchManagement() {
       const wasCompleted = editingMatch?.winner_id != null
       const newMatchWithResult = !editingMatch && hasResult
       const existingMatchWinnerChanged = editingMatch && hasResult && editingMatch.winner_id !== matchData.winner_id
-      
+
       const shouldRecalculate = newMatchWithResult || existingMatchWinnerChanged
 
       let matchIdToUpdate: number | null = null

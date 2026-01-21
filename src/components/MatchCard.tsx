@@ -58,7 +58,7 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
                     href={match.vod_link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-red-500 hover:text-red-400 hover:underline inline-flex items-center gap-1 font-bold transition-colors"
+                    className="px-2 py-0.5 border border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1"
                   >
                     {getVideoIcon(match.vod_link)}
                     Watch
@@ -84,7 +84,7 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
               href={match.vod_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-red-500 hover:text-red-400 hover:underline inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider transition-colors"
+              className="px-2 py-0.5 border border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1"
             >
               {getVideoIcon(match.vod_link)}
               Watch
@@ -185,7 +185,7 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
               href={match.vod_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-red-500 hover:text-red-400 hover:underline inline-flex items-center gap-1 transition-colors"
+              className="px-2 py-0.5 border border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1"
             >
               {getVideoIcon(match.vod_link)}
               Watch
