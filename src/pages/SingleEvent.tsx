@@ -168,10 +168,10 @@ export default function SingleEvent() {
                   <a
                     href={event.vod_link}
                     target="_blank"
-                    rel="noopener noreferrorder-2 border-red-600 text-red-600 rounded hover:bg-red-600 hover:text-white transition-all shadow-lg hover:shadow-red-600/25 font-heading font-bold uppercase tracking-wider text-sm text-center flex items-center justify-center gap-2"
+                    rel="noopener noreferrer"
+                    className="px-6 py-2 border-2 border-red-600 text-red-600 rounded hover:bg-red-600 hover:text-white transition-all shadow-lg hover:shadow-red-600/25 font-heading font-bold uppercase tracking-wider text-sm text-center flex items-center justify-center gap-2"
                   >
                     <Youtube className="w-5 h-5" /> Watch
-                    <span className="text-lg">▶️</span> Event VOD
                   </a>
                 )}
               </div>

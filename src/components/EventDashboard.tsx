@@ -38,12 +38,14 @@ export default function EventDashboard() {
   useEffect(() => {
     loadEvents()
     loadPlayers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     if (selectedEventId) {
       loadMatches()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEventId])
 
   const loadEvents = async () => {

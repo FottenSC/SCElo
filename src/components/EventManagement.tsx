@@ -43,6 +43,7 @@ export default function EventManagement() {
   useEffect(() => {
     loadEvents()
     loadSeasons()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadSeasons = async () => {

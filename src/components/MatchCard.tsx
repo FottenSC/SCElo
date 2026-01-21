@@ -10,16 +10,16 @@ import { slugify } from '@/lib/utils'
 // Helper function to determine if a URL is YouTube or Twitch
 function getVideoIcon(url: string) {
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    return <Youtube size={14} />
+    return <Youtube size={16} />
   }
   if (url.includes('twitch.tv')) {
     return (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="inline-block">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="inline-block">
         <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
       </svg>
     )
   }
-  return <ExternalLink size={14} />
+  return <ExternalLink size={16} />
 }
 
 interface MatchCardProps {
@@ -58,7 +58,7 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
                     href={match.vod_link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-2 py-0.5 border border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1"
+                    className="px-3 py-1 border-2 border-red-600 text-red-600 rounded hover:bg-red-600 hover:text-white transition-all shadow-sm hover:shadow-red-600/20 text-xs font-heading font-bold uppercase tracking-wider inline-flex items-center gap-2"
                   >
                     {getVideoIcon(match.vod_link)}
                     Watch
@@ -84,7 +84,7 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
               href={match.vod_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-2 py-0.5 border border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1"
+              className="px-3 py-1 border-2 border-red-600 text-red-600 rounded hover:bg-red-600 hover:text-white transition-all shadow-sm hover:shadow-red-600/20 text-xs font-heading font-bold uppercase tracking-wider inline-flex items-center gap-2"
             >
               {getVideoIcon(match.vod_link)}
               Watch
@@ -185,7 +185,7 @@ export function MatchCard({ match, player1, player2, showMatchNumber, matchNumbe
               href={match.vod_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-2 py-0.5 border border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1"
+              className="px-3 py-1 border-2 border-red-600 text-red-600 rounded hover:bg-red-600 hover:text-white transition-all shadow-sm hover:shadow-red-600/20 text-xs font-heading font-bold uppercase tracking-wider inline-flex items-center gap-2"
             >
               {getVideoIcon(match.vod_link)}
               Watch

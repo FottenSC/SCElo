@@ -55,6 +55,7 @@ export default function MatchManagement() {
   useEffect(() => {
     loadData()
     loadSeasons()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadSeasons = async () => {
@@ -117,6 +118,7 @@ export default function MatchManagement() {
     if (selectedSeason !== null) {
       loadData(false, selectedSeason)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSeason])
 
   const getPlayerName = (playerId: number) => {
