@@ -165,7 +165,7 @@ export default function Rankings() {
     if (!displayData.isArchived && matches) {
       for (const m of matches) {
         if (!displayData.isAllSeasons && m.season_id !== 0) continue
-        
+
         matchCounts.set(m.player1_id, (matchCounts.get(m.player1_id) ?? 0) + 1)
         matchCounts.set(m.player2_id, (matchCounts.get(m.player2_id) ?? 0) + 1)
       }

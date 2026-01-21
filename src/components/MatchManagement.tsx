@@ -208,15 +208,12 @@ export default function MatchManagement() {
 
       // Check if we need to recalculate ratings:
       // 1. Creating a new match with a result
-      // 2. Updating an existing match with a result (whether it changed or not)
-      const wasCompleted = editingMatch?.winner_id !== null
-      const resultChanged = editingMatch && wasCompleted && hasResult && (
-        editingMatch.winner_id !== matchData.winner_id ||
-        editingMatch.player1_score !== matchData.player1_score ||
-        editingMatch.player2_score !== matchData.player2_score
-      )
+      // 2. Updating an existing match with a result AND the winner changed
+      // We no longer recalculate on score changes alone
       const newMatchWithResult = !editingMatch && hasResult
-      const shouldRecalculate = resultChanged || newMatchWithResult || (editingMatch && hasResult)
+      const existingMatchWinnerChanged = editingMatch && hasResult && editingMatch.winner_id !== matchData.winner_id
+      
+      const shouldRecalculate = newMatchWithResult || existingMatchWinnerChanged
 
       let matchIdToUpdate: number | null = null
 

@@ -345,7 +345,6 @@ export default function EventManagement() {
                   className="flex h-9 w-full rounded-md border border-primary/30 bg-background/50 px-3 py-1 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50 [color-scheme:dark]"
                   value={formData.event_date}
                   onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
-                  min={new Date().toISOString().slice(0, 16)}
                   required
                 />
               </div>

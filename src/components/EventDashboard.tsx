@@ -184,8 +184,9 @@ export default function EventDashboard() {
       setScoreDialogOpen(false)
       loadMatches(true)
 
-      // Recalculate ratings if we're completing a match (either new or updating existing)
-      if (completing) {
+      // Recalculate ratings if we're completing a match AND the winner has changed
+      // This prevents recalculation when just updating scores (e.g. 2-1 vs 2-0)
+      if (completing && editingMatch.winner_id !== winnerId) {
         const ratingResult = await updateRatingForMatch(editingMatch.id)
 
         if (ratingResult.success) {
